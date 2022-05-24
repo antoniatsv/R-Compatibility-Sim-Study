@@ -33,9 +33,9 @@ library(tidyverse)
 
 sims_parameters <- crossing(
   n_iter = 2, 
-  N = 400000,
+  N = 500000,
   N_dev = 100000,
-  N_imp = 200000, 
+  N_imp = 300000, 
   N_val = 100000, 
   Y_prev = c(0.1, 0.5),
   X_categorical = c(TRUE,FALSE), 
