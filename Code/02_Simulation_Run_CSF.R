@@ -17,14 +17,15 @@
 # #######################################################################################################################
 
 
-source(here::here("00_Simulation_functions.R"))
 
-install.packages("tidyverse")
+
+source(here::here("00_Simulation_functions.R")) #main functions to run the sim
+
+#install.packages("tidyverse")
 
 library(tidyverse)
 library(furrr)
 
-#Define a dataset that includes all combinations of simulation parameters (i.e. simulation cases) 
 
 sims_parameters <- crossing(
   n_iter = 200, 
@@ -34,10 +35,10 @@ sims_parameters <- crossing(
   N_val = 100000, 
   Y_prev = c(0.1, 0.5),
   X_categorical = c(TRUE,FALSE), 
-  R_prev = c(0.05, 0.1, 0.2, 0.5),
-  beta_x1 = c(0, 0.1, 0.5, 1), 
-  beta_x2 = c(0, 0.1, 0.5, 1), 
-  beta_U = c(0, 0.1, 0.5, 1),  
+  R_prev = c(0.1, 0.2, 0.5),
+  beta_x1 = c(0, 0.5, 1), 
+  beta_x2 = c(0, 0.5, 1), 
+  beta_U = c(0, 0.5, 1),  
   gamma_x1 = c(0, 0.5, 1), 
   gamma_x2 = c(0, 0.5, 1), 
   gamma_U = c(0, 0.5, 1)
@@ -46,24 +47,25 @@ sims_parameters <- crossing(
 
 #run the main simulation study:
 
-plan(multiprocess, workers = (availableCores()-1))
+plan(multiprocess, workers = (availableCores()-1)) 
+###stores results alongside parameter values in a nested dataset (retaining names of outputs)
 
 for(i in 1:length(sims_parameters$n_iter)){
   
-  mutate(Results = future_pmap(.1 = list(N_dev = N_dev,
-                                         N_imp = N_imp,
-                                         N_val = N_val,
-                                         Y_prev = Y_prev,
-                                         X_categorical = X_categorical,
-                                         R_prev =  R_prev), 
+  mutate(Results = future_pmap(.1 = list(n_iter = sims_parameters$n_iter[i], 
+                                         N_dev = sims_parameters$N_dev[i],
+                                         N_imp = sims_parameters$N_imp[i], 
+                                         N_val = sims_parameters$N_val[i], 
+                                         Y_prev = sims_parameters$Y_prev[i],
+                                         X_categorical = sims_parameters$X_categorical[i], 
+                                         R_prev = sims_parameters$R_prev[i],
+                                         beta_x1 = sims_parameters$beta_x1[i], 
+                                         beta_x2 = sims_parameters$beta_x2[i], 
+                                         beta_U = sims_parameters$beta_U[i],  
+                                         gamma_x1 = sims_parameters$gamma_x1[i], 
+                                         gamma_x2 = sims_parameters$gamma_x2[i], 
+                                         gamma_U = sims_parameters$gamma_U[i]), 
                                .f =  simulation_nrun_fnc,
-                               n_iter = n_iter,
-                               beta_x1 = ,
-                               beta_x2 = ,
-                               beta_U = ,
-                               gamma_x1 = ,
-                               gamma_x2 = ,
-                               gamma_U = ,
                                .progress = TRUE,
                                .options = future_options(seed = as.integer(1234)))
   )
