@@ -1,31 +1,3 @@
-
-# #######################################################################################################################
-
-# Author of code: Antonia D. Tsvetanova
-
-# This is code for a simulation study presented in a manuscript entitled: 
-# Impact of inconsistencies in missing data handlign across the pipeline 
-# of a prediction model on estimated predictive performance: A simulation study
-# Authors:
-#   Antonia Tsvetanova
-#   Matthew Sperrin
-#   Niels Peek
-#   David Jenkins
-#   Iain Buchan
-#   Stephanie Hyland
-#   Glen P. Martin
-
-# #######################################################################################################################
-
-
-
-####---------------------------------------------------------
-## This script runs the simulations across all scenarios 
-####---------------------------------------------------------
-
-#load the simulation functions
-
-
 source("./00_Simulation_Functions.R") #for CSF
 
 #source(here::here("00_Simulation_Functions.R")) #for local run
@@ -37,7 +9,7 @@ library(furrr)
 
 
 sims_parameters <- crossing(
-  n_iter = 200, 
+  n_iter = 1:200, 
   N = 500000,
   N_dev = 100000,
   N_imp = 300000, 
@@ -56,6 +28,7 @@ sims_parameters <- crossing(
 
 args <- commandArgs(trailingOnly = T) #pull in all arguments from the qsub file
 s <- as.numeric(args[1]) #Note that we need to specify what class the argument is
+
 
 #run the main simulation study:
 
