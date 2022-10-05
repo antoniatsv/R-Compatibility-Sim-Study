@@ -1,24 +1,3 @@
-# #######################################################################################################################
-
-# Author of code: Antonia D. Tsvetanova
-
-# This is code for a simulation study presented in a manuscript entitled: 
-# Impact of inconsistencies in missing data handlign across the pipeline 
-# of a prediction model on estimated predictive performance: A simulation study
-# Authors:
-#   Antonia Tsvetanova
-#   Matthew Sperrin
-#   Niels Peek
-#   David Jenkins
-#   Iain Buchan
-#   Stephanie Hyland
-#   Glen P. Martin
-
-# #######################################################################################################################
-
-
-
-
 #!/bin/bash --login
 #$ -S bin/bash
 #$ -cwd
@@ -26,6 +5,6 @@
 
 module load apps/gcc/R/4.0.2
 
-#$ -t 1-8748 
+$ -t 1-200
 
 Rscript 01_Simulation_Run_CSF.R $SGE_TASK_ID > simulation_warnings.$SGE_TASK_ID
