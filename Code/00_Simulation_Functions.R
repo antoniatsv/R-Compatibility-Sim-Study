@@ -22,7 +22,7 @@
 ## Define a function to repeat the simulation across all iterations (for a given scenario)
 ####-----------------------------------------------------------------------------------------
 
-simulation_nrun_fnc <- function(n_iter,
+simulation_nrun_fnc <- function(n_iter, 
                                 N_dev,
                                 N_imp, 
                                 N_val, 
@@ -40,13 +40,15 @@ simulation_nrun_fnc <- function(n_iter,
   
   ## Define an empty variable, which will be used to store the results across all iterations
   results <- NULL
+  set.seed(n_iter)
+  n_iter <- as.numeric(n_iter)
   
   ## Repeat the simulation across iter number of iterations
   #number of iterations n_iter
   #the single run function is what calls all the functions for a given set of parameters, so i dont need to have all the fncs 
   #repeated in a function, they are separate. Think of the single run function as the flow diagram in the protocol. 
   
-  for (iter in 1:n_iter) {
+
     simulation_results <- simulation_singlerun_fnc(N_dev = N_dev,
                                                    N_imp = N_imp, 
                                                    N_val = N_val, 
@@ -61,13 +63,10 @@ simulation_nrun_fnc <- function(n_iter,
                                                    gamma_U = gamma_U)
     
     results <- results %>%
-      bind_rows(as_tibble(simulation_results) %>% 
-                  mutate("Iteration" = iter, .before = "dataset")) 
-    
-    print(paste("iteration ", iter, " complete", sep = ""))
-  }
-  # write_rds(results, file = "test.rds")
+      bind_rows(as_tibble(simulation_results) %>%
+                  mutate("Iteration" = iter, .before = "dataset"))
   
+
   return(results)
 }
 
@@ -144,7 +143,7 @@ simulation_singlerun_fnc <- function(N_dev,
   #6.val_imp_mode_function------------------------------------------------
   Target_measures <- val_imp_mod_function(imputed_datasets = imputed_datasets, 
                                           models = models)
-
+  
   return(Target_measures)
   
 } 
@@ -173,21 +172,21 @@ dev_data_simulation_function <- function(
   gamma_U,
   Y_prev) 
   
-  {
+{
   
   
   if(X_categorical == FALSE) {
     dev_data_IPD <- tibble("x_1" = rnorm(n = N_dev, mean = 0, sd = 1)
-                       ,"x_2" = rnorm(N_dev, mean = 0, sd = 1)
-                       , "U" = rnorm(N_dev, mean = 0, sd = 1)
-                       , "ID" = 1:N_dev)
+                           ,"x_2" = rnorm(N_dev, mean = 0, sd = 1)
+                           , "U" = rnorm(N_dev, mean = 0, sd = 1)
+                           , "ID" = 1:N_dev)
   }
   
   else{
     dev_data_IPD <- tibble("x_1" = rbinom(n = N_dev, size = 1, prob = 0.1) 
-                  , "x_2" = rnorm(N_dev, mean = 0, sd = 1) 
-                  , "U" = rnorm(N_dev, mean = 0, sd = 1) 
-                  , "ID" = 1:N_dev
+                           , "x_2" = rnorm(N_dev, mean = 0, sd = 1) 
+                           , "U" = rnorm(N_dev, mean = 0, sd = 1) 
+                           , "ID" = 1:N_dev
     )
   }
   
@@ -195,8 +194,8 @@ dev_data_simulation_function <- function(
   #determine the prevalence of the outcome based on the gamma_0
   
   gamma_0 <- as.numeric(coef(glm(rbinom(N_dev, 1, prob = Y_prev) ~ offset(gamma_x1*x_1 + gamma_x2*x_2 + gamma_U*U), 
-                      family = binomial(link = "logit"),
-                      data = dev_data_IPD))[1])
+                                 family = binomial(link = "logit"),
+                                 data = dev_data_IPD))[1])
   
   dev_data_IPD$Y = rbinom(N_dev, size = 1, 
                           prob = expit_function(gamma_0 + gamma_x1*dev_data_IPD$x_1 + gamma_x2*dev_data_IPD$x_2 + gamma_U*dev_data_IPD$U))
@@ -223,12 +222,12 @@ simulation_function <- function(N_imp,
                                 gamma_U) {
   
   N <- N_imp + N_val
-
+  
   if(X_categorical == FALSE) {
     IPD <- tibble("x_1" = rnorm(n = N, mean = 0, sd = 1) #X1 is continuous and normally distributed
-                ,"x_2" = rnorm(N, mean = 0, sd = 1) #X2 is continuous and normally distributed
-                ,"U" = rnorm(N, mean = 0, sd = 1) #U is continuous and normally distributed but it will be unobserved
-                ,"ID" = 1:N
+                  ,"x_2" = rnorm(N, mean = 0, sd = 1) #X2 is continuous and normally distributed
+                  ,"U" = rnorm(N, mean = 0, sd = 1) #U is continuous and normally distributed but it will be unobserved
+                  ,"ID" = 1:N
     )
     
   } else{
@@ -238,18 +237,28 @@ simulation_function <- function(N_imp,
                   , "ID" = 1:N
     )
   }
-
+  
   
   #determine the prevalence of R through beta_0
   beta_0 <- as.numeric(coef(glm(rbinom(N, 1, prob = R_prev) ~ offset(beta_x1*x_1 + beta_x2*x_2 + beta_U*U), #R_prev is the missingness level so we control that? We control this by the Y_prev(the number of times R1 is 1 or 0)
-                                           family = binomial(link = "logit"),
-                                           data = IPD))[1])
-  
-  IPD$Y = rbinom(N, size = 1, 
-                    prob = expit_function(beta_0 + beta_x1*IPD$x_1 + beta_x2*IPD$x_2 + beta_U*IPD$U))
+                                family = binomial(link = "logit"),
+                                data = IPD))[1])
   
   IPD$R_1 = rbinom(N, size = 1, 
-               prob = expit_function(beta_x1*IPD$x_1 + beta_x2*IPD$x_2 + beta_U*IPD$U)) 
+                   prob = expit_function(beta_0 + beta_x1*IPD$x_1 + beta_x2*IPD$x_2 + beta_U*IPD$U)) 
+  #!!!!!!!!!!!!!!!!!!!!!!!!
+  
+  
+  ########
+ 
+  #determine the prevalence of Y through _0
+  gamma_0 <- as.numeric(coef(glm(rbinom(N, 1, prob = Y_prev) ~ offset(gamma_x1*x_1 + gamma_x2*x_2 + gamma_U*U), 
+                                 family = binomial(link = "logit"),
+                                 data = IPD))[1])
+  
+  IPD$Y = rbinom(N, size = 1, 
+                 prob = expit_function(gamma_0 + gamma_x1*IPD$x_1 + gamma_x2*IPD$x_2 + gamma_U*IPD$U))
+  ########
   
   
   observed_data <- IPD %>%
@@ -296,7 +305,7 @@ mice_function <- function(df, m = 5, Y) {
   predmat["U",] <- 0
   predmat[,"R_1"] <- 0
   predmat["R_1",] <- 0
-  mice(df, m, predictorMatrix = predmat, printFlag = FALSE) 
+  mice(df, m, predictorMatrix = predmat, printFlag = FALSE, maxit = 1) 
   
 }
 
@@ -334,23 +343,23 @@ imputed_by_zero_function <- function(df) {
   if(is.factor(df$x_1) == TRUE) {
     df$x_1[is.na(df$x_1)] <- 0
   } else if (is.factor(df$x_1) == FALSE) {   #if X1 is continuous, the function will fail instead of imputing
-     stop("imputed_by_zero_function only relevant for X_categorical == TRUE")
-    }
+    stop("imputed_by_zero_function only relevant for X_categorical == TRUE")
+  }
   df 
 }
 
-  
+
 ####--------------------------
 ## 3. Master imputation function
 ####--------------------------
 
 imputation_function <- function(df, m = 5) {
   
-  MI_val_data_noY <- mice_function(df$validation_data, m = m, Y = FALSE) 
-  MI_val_data_withY <- mice_function(df$validation_data, m = m, Y = TRUE)
-  MI_imp_data_noY <- mice_function(df$implementation_data, m = m, Y = FALSE)
-  MI_imp_data_withY <- mice_function(df$implementation_data, m = m, Y = TRUE)
-
+  MI_val_data_noY <- mice_function(df$validation_data, m = m, Y = FALSE, maxit = 1) 
+  MI_val_data_withY <- mice_function(df$validation_data, m = m, Y = TRUE, maxit = 1)
+  MI_imp_data_noY <- mice_function(df$implementation_data, m = m, Y = FALSE, maxit = 1)
+  MI_imp_data_withY <- mice_function(df$implementation_data, m = m, Y = TRUE, maxit = 1)
+  
   CCA_val_data <- CCA_function(df$validation_data)
   CCA_imp_data <- CCA_function(df$implementation_data)
   
@@ -475,7 +484,7 @@ predict_single_imputed <- function(imputed_datasets, models) {
   
   
   return(output_predictions)
- }
+}
 
 ####-----------------------------------------------------------
 ## 6. Function that applies all 4 models to all imputed datasets
@@ -515,6 +524,8 @@ predictive.performance.function <- function(Y, Predicted_Risks) {
   
   library(pROC)
   
+  n_iter <- as.numeric(n_iter)
+  
   #Input: 
   # Y = a binary variable of observed outcomes
   # Predicted_Risks = a vector of predicted risks for each dataset
@@ -525,44 +536,60 @@ predictive.performance.function <- function(Y, Predicted_Risks) {
   ## Calculate Brier Score (mean square error of predictions; the lower, the better)
   ####------------------------------------------------------------------
   Brier <- 1/length(Y) * (sum((Predicted_Risks - Y)^2))
+  Brier_SE <- 1
   
   ## Calibration intercept (i.e. calibration-in-the-large)
   ####-------------------------------------------------------------------------------
   LP <- log(Predicted_Risks/ (1 - Predicted_Risks)) 
   Cal_Int <- glm(Y ~ offset(LP), family = binomial(link = "logit"))
+  Cal_Int_SE <-sqrt(vcov(Cal_Int)[1,1])
   
   ## Calibration slope
   ####--------------------------------------------------------------------------
   Cal_Slope <- glm(Y ~ LP, family = binomial(link = "logit"))
+  Cal_Slope_SE <- summary(Cal_Slope)$coefficients[, 2][2]
   
   ## Observed-vs-Expected ratio
   ####------------------------------------------------------------------------
   
-   Observed_outcome <- (mean(Y))
-   Expected_outcome <- mean(Predicted_Risks)
+  Observed_outcome <- (mean(Y))
+  Expected_outcome <- mean(Predicted_Risks)
   
-   O_E <- Observed_outcome / Expected_outcome
-    
-    ## Discrimination (c-statistic?)
-    ####------------------------------------------------------------------------
-  AUC <- as.numeric(roc(response = Y, 
+  O_E <- Observed_outcome / Expected_outcome
+  O_E_SE <- 1
+  
+  ## Discrimination (c-statistic?)
+  ####------------------------------------------------------------------------
+  AUC <- roc(response = Y, 
                         predictor = as.vector(Predicted_Risks),
                         direction = "<",
-                        levels = c(0,1))$auc)
+                        levels = c(0,1))$auc
+  AUC_SE <- sqrt(var(AUC, method = "delong")) #approximation method used for AUC to calculate the variance
   
-
+  #SE = SD ? 
+  
   ## Store performance results in a data.frame and return
   ####------------------------------------------------------------------------
-  Target_measures <- data.frame("Cal_Int" = as.numeric(coef(Cal_Int)),
+  Target_measures <- data.frame("n_iter" = n_iter,  #on the csf it gives error that it's not defined - we can either get rid of it or add it to the main body of this function?
+                                "Cal_Int" = as.numeric(coef(Cal_Int)), #again, on the csf it says 'argument is missing with no default'
+                                "Cal_Int_SE" = as.numeric(Cal_Int_SE),
                                 "Cal_Slope" = as.numeric(coef(Cal_Slope)[2]),
+                                "Cal_Slope_SE" = as.numeric(Cal_Slope_SE),
                                 "O_E" = O_E,
-                                "AUC" = AUC,
-                                "Brier" = Brier)
+                                "O_E_SE" = O_E_SE,
+                                "AUC" = as.numeric(AUC),
+                                "AUC_SE" = as.numeric(AUC_SE),
+                                "Brier" = Brier,
+                                "Brier_SE" = Brier_SE,
+                                )
   
   
   return(Target_measures)
   
 }
+
+
+
 
 
 
