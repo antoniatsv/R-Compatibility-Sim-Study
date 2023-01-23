@@ -14,7 +14,7 @@ sims_parameters <- crossing(
   N_imp = 300000, 
   N_val = 100000, 
   Y_prev = c(0.1, 0.5),
-  X_categorical = TRUE, 
+  X_categorical = c(TRUE, FALSE), 
   R_prev = c(0.1, 0.2, 0.5),
   beta_x1 = c(0, 0.5, 1), 
   beta_x2 = c(0, 0.5, 1), 
