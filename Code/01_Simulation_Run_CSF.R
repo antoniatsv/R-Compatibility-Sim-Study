@@ -1,6 +1,5 @@
 source("./00_Simulation_Functions.R") #for CSF
 
-#source(here::here("00_Simulation_Functions.R")) #for local run
 
 #install.packages("tidyverse")
 
@@ -9,13 +8,13 @@ library(furrr)
 
 
 sims_parameters <- crossing(
-  n_iter = 1:200, 
+  n_iter = 100, 
   N = 500000,
   N_dev = 100000,
   N_imp = 300000, 
   N_val = 100000, 
   Y_prev = c(0.1, 0.5),
-  X_categorical = c(TRUE,FALSE), 
+  X_categorical = TRUE, 
   R_prev = c(0.1, 0.2, 0.5),
   beta_x1 = c(0, 0.5, 1), 
   beta_x2 = c(0, 0.5, 1), 
@@ -53,3 +52,5 @@ simulation_results <- simulation_nrun_fnc(
 write_rds(simulation_results, file = paste0("Results_", s,".rds"))
 
 warnings()
+
+
