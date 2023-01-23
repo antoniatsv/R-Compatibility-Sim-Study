@@ -40,7 +40,7 @@ simulation_nrun_fnc <- function(n_iter,
   
   ## Define an empty variable, which will be used to store the results across all iterations
   results <- NULL
-  set.seed(n_iter*3)
+  set.seed(n_iter*4)
   
   ## Repeat the simulation across iter number of iterations
   #number of iterations n_iter
@@ -319,9 +319,10 @@ mice_function <- function(df, m = 5, Y) {
 mean_function <- function(df) {
   mean_imputed_df <- df
   
-  if(is.factor(df$x_1) == TRUE) { #if X1 is categorical, the function will fail instead of imputing
+  if(length(unique(df$x_1[!is.na(df$x_1)])) == 2) { #if X1 is categorical, the function will fail instead of imputing
     stop("mean_function only relevant for X_categorical == FALSE")
   } else {   
+    
     mean_imputed_df <- mean_imputed_df %>%
       mutate(across(starts_with("x_"), 
                     ~tidyr::replace_na(.x,
@@ -342,9 +343,9 @@ CCA_function <- function(df) {
 ## Missing values considered normal (zero imputation) function
 ####----------------------------------------------------------
 imputed_by_zero_function <- function(df) {
-  if(is.factor(df$x_1) == TRUE) {
+  if(length(unique(df$x_1[!is.na(df$x_1)])) == 2) {
     df$x_1[is.na(df$x_1)] <- 0
-  } else if (is.factor(df$x_1) == FALSE) {   #if X1 is continuous, the function will fail instead of imputing
+  } else if (length(unique(df$x_1[!is.na(df$x_1)])) != 2) {   #if X1 is continuous, the function will fail instead of imputing
     stop("imputed_by_zero_function only relevant for X_categorical == TRUE")
   }
   df 
@@ -367,7 +368,7 @@ imputation_function <- function(df, m = 5) {
   
   all_data_imp <- df$fully_observed_imp_data
   
-  if(is.factor(df$validation_data$x_1) == TRUE) {
+  if(length(unique(df$validation_data$x_1[which(!is.na(df$validation_data$x_1))])) == 2) {
     # if X1 is categorical, then perform missing value is risk factor absent (no mean imputation here)
     zero_val_data <- imputed_by_zero_function(df$validation_data) 
     zero_imp_data <- imputed_by_zero_function(df$implementation_data)
@@ -580,15 +581,3 @@ predictive.performance.function <- function(Y, Predicted_Risks) {
   return(Target_measures)
   
 }
-
-
-
-
-
-
-
-
-
-
-
-
