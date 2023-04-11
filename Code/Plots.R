@@ -1,4 +1,3 @@
-
 library(tidyverse)
 library(magrittr)
 library(dplyr)
@@ -146,6 +145,31 @@ df_DAG <- df_scenario_number %>%
   )
 
 
+df_DAG <- df_DAG %>%
+  mutate(dataset = recode(dataset, 
+                          CCA_val_data = 'CCA at Validation',
+                          all_data_imp = 'All data required at Implementation',
+                          MI_val_data_noY = 'MI no Y at Validation',
+                          MI_imp_data_noY = 'MI no Y at Implementation',
+                          MI_val_data_withY = 'MI with Y at Validation',
+                          MI_imp_data_withY = 'MI with Y at Implementation',
+                          mean_val = 'Imputed by mean at Validation',
+                          mean_imp = 'Imputed by mean at Implementation',
+                          all_data_imp = 'All data required at Implementation'))
+
+
+
+df_DAG <- df_DAG %>%
+  mutate(target_measures = recode(target_measures, 
+                                  AUC = 'AUC',
+                                  Brier = 'Brier Score',
+                                  Cal_Int = 'Calibration Intercept',
+                                  Cal_Slope = 'Calibration Slope'))
+
+df_DAG$target_measures <- factor(df_DAG$target_measures,
+                                 levels = c("AUC", "Calibration Intercept", "Calibration Slope", "Brier Score"))
+
+
 
 ##############################################################################################################
 #(1) split data into val and imp datasets
@@ -284,9 +308,9 @@ bias_imp_MI_withY <- joined_imp_MI_withY %>%
 
 
 
-##########################################
-################## BIAS PLOTS ############
-##########################################
+##############################################################################################################################
+################## BIAS PLOTS ################################################################################################
+##############################################################################################################################
 
 bias_all <- bias_imp_all_data %>% mutate("imp_method" = "All data required") %>%
   bind_rows(bias_imp_mean %>% mutate("imp_method" = "Imputed by mean")) %>%
@@ -310,19 +334,13 @@ bias_all <- bias_all %>%
                             Cal_Int = 'Calibration Intercept',
                             Cal_Slope = 'Calibration Slope'))
 
+bias_all$target_measures <- factor(bias_all$target_measures,
+                                   levels = c("AUC", "Calibration Intercept", "Calibration Slope", "Brier Score"))
 
 plot_scenario <- function(sn) {
   print(sn)
   bias_all = bias_all
-  # Determine the scenario name based on the scenario number
-  # scenario_name <- switch(scenario_number,
-  #                         `5846` = "MCAR",
-  #                         `5927` = "MAR",
-  #                         `6170` = "MNAR-X",
-  #                         `5954` = "MNAR-Y",
-  #                         `6197` = "MNAR-XY")
-  
-  # Generate the plot for the given scenario number
+
   plot <- ggplot(data = bias_all %>%
                    filter(scenario_number == sn), 
                  aes(x = bias_mean, y = dataset.x, color = factor(target_measures),
@@ -366,3 +384,44 @@ plot_scenario(5927)  # Generates the MAR plot
 plot_scenario(6170)  # Generates the MNAR-X plot
 plot_scenario(5954)  # Generates the MNAR-Y plot
 plot_scenario(6197)  # Generates the MNAR-XY plot
+
+
+
+##############################################################################################################################
+########################################## METRICS PLOTS - APPENDIX ##########################################################
+##############################################################################################################################
+
+
+plot_metrics <- function(sn) {
+  ggplot(data = df_DAG %>%
+           filter(scenario_number == sn) %>%
+           group_by(dataset, target_measures) %>%
+           summarise(mean_estimates = mean(estimates),
+                     min_estimates = min(estimates),
+                     max_estimates = max(estimates)),
+         aes(x = mean_estimates, y = dataset, color = factor(target_measures))) + 
+    geom_errorbar(aes(xmin = min_estimates, xmax = max_estimates), width=.1) +
+    geom_point(size = 3, stroke = 0.5) +
+    guides(color = guide_legend(reverse = TRUE)) + 
+    scale_shape_manual(values = c(8, 17, 16, 15)) +
+    scale_color_brewer(palette = "Set1") +
+    xlab("Mean Estimates") +
+    ylab("Data Imputation Methods") +
+    theme_minimal() +
+    theme(legend.position = "none",
+          axis.text = element_text(size=14),
+          axis.title = element_text(size=16, face="bold"),
+          axis.text.x = element_text(size=14),
+          axis.text.y = element_text(size=14),
+          strip.text = element_text(size = 16),
+          panel.background = element_rect(fill = "gray90"),  # add background color to panels
+          panel.spacing.x = unit(0.5, "lines")) +  # increase space between panels
+    ggh4x::facet_grid2(~  target_measures, scales = "free_x", independent = "x")
+}
+
+
+plot_metrics(5846)  # Generates the MCAR plot
+plot_metrics(5927)  # Generates the MAR plot
+plot_metrics(6170)  # Generates the MNAR-X plot
+plot_metrics(5954)  # Generates the MNAR-Y plot
+plot_metrics(6197)  # Generates the MNAR-XY plot
