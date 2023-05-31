@@ -8,6 +8,7 @@ library(ggh4x)
 
 # Iterations 1-25
 ##############################################################################################################
+setwd("/Users/user/AntoniaPhD/2. RSim/RESULTScontinuous/25x1")
 ##############################################################################################################
 
 #gives the filenames in the filepath
@@ -31,6 +32,7 @@ df_1$scenario_number <- test_1
 # Iterations 26 - 50 
 ##############################################################################################################
 # C H A N G E   D I R E C T O R Y 
+setwd("/Users/user/AntoniaPhD/2. RSim/RESULTScontinuous/25x2")
 ##############################################################################################################
 filenames <- list.files(pattern = ".rds") 
 
@@ -55,6 +57,7 @@ df_2$scenario_number <- test_2
 # Iterations 51 - 75
 ##############################################################################################################
 # C H A N G E   D I R E C T O R Y 
+setwd("/Users/user/AntoniaPhD/2. RSim/RESULTScontinuous/25x3")
 ##############################################################################################################
 filenames <- list.files(pattern = ".rds") 
 
@@ -78,8 +81,10 @@ df_3$scenario_number <- test_3
 # Iterations 76 - 100
 ##############################################################################################################
 # C H A N G E   D I R E C T O R Y 
+
+setwd("/Users/user/AntoniaPhD/2. RSim/RESULTScontinuous/25x4")
 ##############################################################################################################
-setwd("~/AntoniaPhD/2ndPaper/RESULTScontinuous/25x4")
+
 filenames <- list.files(pattern = ".rds") 
 
 
@@ -116,6 +121,7 @@ rm(df_4)
 df_long <- pivot_longer(df_all_iter, 4:7, names_to = "target_measures", values_to = "estimates") %>%
   filter(mod == 1)
 
+rm(df_all_iter)
 
 sims_parameters <- readRDS(file = "sims_parameters.RDS") %>%
   mutate(scenario_number = 1:n())
@@ -124,8 +130,8 @@ sims_parameters <- readRDS(file = "sims_parameters.RDS") %>%
 df_scenario_number <- left_join(df_long, sims_parameters, by = "scenario_number") 
 
 rm(df_long)
-rm(df_all_iter)
-rm(df_DAG)
+
+
 
 
 ##### add DAG type to the df ######
@@ -147,7 +153,7 @@ df_DAG <- df_scenario_number %>%
   )
 
 
-
+rm(df_scenario_number)
 
 df_DAG <- df_DAG %>%
   mutate(target_measures = recode(target_measures, 
@@ -160,8 +166,7 @@ df_DAG$target_measures <- factor(df_DAG$target_measures,
                                  levels = c("AUC", "Calibration Intercept", "Calibration Slope", "Brier Score"))
 
 
-rm(df_imp)
-rm(df_val)
+
 ##############################################################################################################
 #(1) split data into val and imp datasets
 df_val <- df_DAG[df_DAG$dataset %like% "val", ]
@@ -196,21 +201,8 @@ joined_imp_mean <- left_join(df_val, imp_mean, by = c("Iteration", "mod", "scena
   mutate(bias = estimates - true_estimates)
 
 
-
 rm(df_imp)
 rm(df_val)
-rm(imp_all_data)
-rm(imp_mean)
-rm(imp_MI_noY)
-rm(imp_MI_withY)
-
-rm(joined_imp_all_data)
-rm(joined_imp_MI_noY)
-rm(joined_imp_MI_withY)
-rm(joined_imp_mean)
-rm(MCAR_metrics)
-
-
 
 ##############################################################################################################
 # Plot biases 
