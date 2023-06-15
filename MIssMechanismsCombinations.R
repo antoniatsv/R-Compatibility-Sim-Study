@@ -1,6 +1,10 @@
 ####################################################################################
 
+<<<<<<< HEAD
 # M     C      A      R  
+=======
+# M     C      A      R
+>>>>>>> 5325ce017b7f23a4f0a44c4a912f61e8e4dd4bef
 
 ####################################################################################
 
@@ -81,6 +85,12 @@ which(bias_imp_all_data$scenario_number == 1472 &
         bias_imp_all_data$Y_prev.x == 0.1)
 
 
+<<<<<<< HEAD
+=======
+row_new_alldata <-BIAS_MCAR_ALLDATA[1472, ]
+
+row_old_alldata <- bias_imp_all_data[5885, ]
+>>>>>>> 5325ce017b7f23a4f0a44c4a912f61e8e4dd4bef
 
 ####################################################################################
 #MCAR BIAS ***MEAN*** AT IMPLEMENTATION + all validation methods + mechanisms 
@@ -154,6 +164,12 @@ which(BIAS_MCAR_MEAN$scenario_number.x == 1472 &
         BIAS_MCAR_MEAN$R_prev == 0.5 & 
         BIAS_MCAR_MEAN$Y_prev == 0.1)
 
+<<<<<<< HEAD
+=======
+row_new_mean <- BIAS_MCAR_MEAN[10220, ]
+row_old_mean <- bias_imp_mean[5887, ]
+
+>>>>>>> 5325ce017b7f23a4f0a44c4a912f61e8e4dd4bef
 
 ######################################################################################
 #MCAR BIAS ***MI without Y*** AT IMPLEMENTATION + all validation methods + mechanisms 
@@ -229,6 +245,14 @@ which(BIAS_MCAR_MInoY$scenario_number.x == 1472 &
 
 
 
+<<<<<<< HEAD
+=======
+row_old_MInoY <- bias_imp_MI_noY[58376, ]
+row_new_MInoY <- BIAS_MCAR_MInoY[67082, ]
+
+
+
+>>>>>>> 5325ce017b7f23a4f0a44c4a912f61e8e4dd4bef
 
 ######################################################################################
 #MCAR BIAS ***MI withY*** AT IMPLEMENTATION + all validation methods + mechanisms 
@@ -304,12 +328,21 @@ which(BIAS_MCAR_MIwithY$scenario_number.x == 1472 &
 
 
 
+<<<<<<< HEAD
+=======
+row_old_MInoY <- bias_imp_MI_noY[58376, ]
+row_new_MInoY <- BIAS_MCAR_MInoY[67082, ]
+
+
+
+>>>>>>> 5325ce017b7f23a4f0a44c4a912f61e8e4dd4bef
 #combine all BIAS dataframes into one BIAS_MCAR
 
 
 
 
 
+<<<<<<< HEAD
 ##################################################################################
 
 #                                M        A      R
@@ -638,3 +671,11 @@ row_new_2 <- BIAS_MAR_MIwithY[134325, ]
 ####################################################################################
 
 ##test
+=======
+
+####################################################################################
+
+#                                M        A      R
+
+####################################################################################
+>>>>>>> 5325ce017b7f23a4f0a44c4a912f61e8e4dd4bef

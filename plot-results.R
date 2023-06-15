@@ -433,6 +433,7 @@ plot_metrics(5954)  # Generates the MNAR-Y plot
 plot_metrics(6197)  # Generates the MNAR-XY plot
 
 
+<<<<<<< HEAD
 
 
 
@@ -1084,3 +1085,6 @@ row_new_2 <- BIAS_MAR_MIwithY[134325, ]
 
 ##test
 
+=======
+#test branch
+>>>>>>> 5325ce017b7f23a4f0a44c4a912f61e8e4dd4bef
