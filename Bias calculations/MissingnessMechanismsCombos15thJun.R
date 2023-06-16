@@ -1,3 +1,188 @@
+library(tidyverse)
+library(magrittr)
+library(dplyr)
+library(ggplot2)
+library(data.table)
+library(RColorBrewer)
+library(ggh4x)
+
+# Iterations 1-25
+##############################################################################################################
+setwd("/Users/user/AntoniaPhD/2. RSim/RESULTScontinuous/25x1")
+##############################################################################################################
+
+#gives the filenames in the filepath
+filenames <- list.files(pattern = ".rds") 
+
+#read all files to be concatenated
+df_1 <- list.files(pattern = ".rds") %>%
+  map_dfr(readRDS) 
+
+
+#extract the scenario numbers from the rds files names (note 1 rds is missing?)
+scenario_number <- as.numeric(str_extract(filenames, pattern = "[0-9]+"))
+
+test_1 <- c()
+
+for(i in 1:length(scenario_number)){ test_1 <- c(test_1, rep(scenario_number[i],900) ) }
+
+df_1$scenario_number <- test_1
+
+
+# Iterations 26 - 50 
+##############################################################################################################
+# C H A N G E   D I R E C T O R Y 
+setwd("/Users/user/AntoniaPhD/2. RSim/RESULTScontinuous/25x2")
+##############################################################################################################
+filenames <- list.files(pattern = ".rds") 
+
+
+df_2 <- list.files(pattern = ".rds") %>%
+  map_dfr(readRDS) 
+
+#extract the scenario numbers from the rds files names 
+scenario_number <- as.numeric(str_extract(filenames, pattern = "[0-9]+"))
+
+df_2$Iteration <- df_2$Iteration + 25 
+
+test_2 <- c()
+
+for(i in 1:length(scenario_number)){ test_2 <- c(test_2, rep(scenario_number[i],900) ) }
+
+df_2$scenario_number <- test_2
+
+
+
+
+# Iterations 51 - 75
+##############################################################################################################
+# C H A N G E   D I R E C T O R Y 
+setwd("/Users/user/AntoniaPhD/2. RSim/RESULTScontinuous/25x3")
+##############################################################################################################
+filenames <- list.files(pattern = ".rds") 
+
+
+df_3 <- list.files(pattern = ".rds") %>%
+  map_dfr(readRDS) 
+
+#extract the scenario numbers from the rds files names (note 1 rds is missing?)
+scenario_number <- as.numeric(str_extract(filenames, pattern = "[0-9]+"))
+
+df_3$Iteration <- df_3$Iteration + 50
+
+test_3 <- c()
+
+for(i in 1:length(scenario_number)){ test_3 <- c(test_3, rep(scenario_number[i],900) ) }
+
+df_3$scenario_number <- test_3
+
+
+
+# Iterations 76 - 100
+##############################################################################################################
+# C H A N G E   D I R E C T O R Y 
+
+setwd("/Users/user/AntoniaPhD/2. RSim/RESULTScontinuous/25x4")
+##############################################################################################################
+
+filenames <- list.files(pattern = ".rds") 
+
+
+df_4 <- list.files(pattern = ".rds") %>%
+  map_dfr(readRDS) 
+
+#extract the scenario numbers from the rds files names (note 1 rds is missing?)
+scenario_number <- as.numeric(str_extract(filenames, pattern = "[0-9]+"))
+
+df_4$Iteration <- df_4$Iteration + 75
+
+test_4 <- c()
+
+for(i in 1:length(scenario_number)){ test_4 <- c(test_4, rep(scenario_number[i],900) ) }
+
+df_4$scenario_number <- test_4
+
+##############################################################################################################
+# concatenate df_1, df_2, df_3 and df_4 into one big data frame 
+
+df_all_iter <- rbind(df_1, df_2, df_3, df_4)
+
+df_all_iter <- df_all_iter[, -c(5,7,9,11)] #use select instead
+
+##############################################################################################################
+
+rm(df_1)
+rm(df_2)
+rm(df_3)
+rm(df_4)
+
+
+
+df_long <- pivot_longer(df_all_iter, 4:7, names_to = "target_measures", values_to = "estimates") %>%
+  filter(mod == 1)
+
+rm(df_all_iter)
+
+sims_parameters <- readRDS(file = "sims_parameters.RDS") %>%
+  mutate(scenario_number = 1:n())
+
+
+df_scenario_number <- left_join(df_long, sims_parameters, by = "scenario_number") 
+
+rm(df_long)
+
+
+
+
+##### add DAG type to the df ######
+df_DAG <- df_scenario_number %>% 
+  mutate(
+    DAG_type = case_when(
+      beta_x1 == 0 & beta_x2 == 0 & beta_U == 0 ~ "MCAR",
+      beta_x1 == 0 & beta_x2 != 0 & beta_U == 0 ~ "MAR", 
+      beta_x1 != 0 & beta_x2 != 0 & beta_U == 0 ~ "MNAR1",
+      beta_x1 == 0 & beta_x2 != 0 & beta_U != 0 ~ "MNAR2",
+      beta_x1 != 0 & beta_x2 != 0 & beta_U != 0 ~ "MNAR3",
+      beta_x1 != 0 & beta_x2 == 0 & beta_U != 0 ~ "MNAR*", #DAG that we don't consider: Missingness depends on itself and on some unobserved variable
+      beta_x1 != 0 & beta_x2 == 0 & beta_U == 0 ~ "MNAR**", #DAG that we don't consider: Missingness depends on itself only 
+      beta_x1 == 0 & beta_x2 == 0 & beta_U != 0 ~ "MNAR***", #DAG that we don't consider: Missingness depends on some unobserved variable only
+      
+      
+      TRUE ~ as.character("error")
+    )
+  )
+
+
+rm(df_scenario_number)
+
+df_DAG <- df_DAG %>%
+  mutate(target_measures = recode(target_measures, 
+                                  AUC = 'AUC',
+                                  Brier = 'Brier Score',
+                                  Cal_Int = 'Calibration Intercept',
+                                  Cal_Slope = 'Calibration Slope'))
+
+df_DAG$target_measures <- factor(df_DAG$target_measures,
+                                 levels = c("AUC", "Calibration Intercept", "Calibration Slope", "Brier Score"))
+
+
+
+##############################################################################################################
+#(1) split data into val and imp datasets
+df_val <- df_DAG[df_DAG$dataset %like% "val", ]
+df_imp <- df_DAG[df_DAG$dataset %like% "imp", ]
+
+
+df_val <- df_val %>% 
+  mutate(
+    dataset = case_when(
+      dataset == "CCA_val_data" ~ "CCA",
+      dataset == "MI_val_data_noY" ~ "MI no Y",
+      dataset == "MI_val_data_withY" ~ "MI with Y",
+      dataset == "mean_val" ~ "Imputed by mean",
+      TRUE ~ dataset))
+
+
 ############################################################################################################################################
 # M   C   A   R
 ############################################################################################################################################
@@ -204,24 +389,6 @@ MCAR_ALL <- MCAR_ALLDATA_BIAS %>% mutate("imp_method" = "All data required") %>%
   bind_rows(MCAR_MInoY_BIAS %>% mutate("imp_method" = "MI without Y")) %>%
   bind_rows(MCAR_MIwithY_BIAS %>% mutate("imp_method" = "MI with Y")) 
 
-MCAR_ALL <- MCAR_ALL %>% 
-  slice_sample(n = 5) %>%
-  mutate(dataset.y = recode(dataset.y, 
-                          CCA_val_data = 'CCA',
-                          MI_val_data_noY = 'MI no Y',
-                          MI_val_data_withY = 'MI with Y',
-                          mean_val = 'Imputed by mean')) 
-
-
-MCAR_ALL <- MCAR_ALL %>% 
-  mutate(target_measures = recode(target_measures, 
-                                  AUC = 'AUC',
-                                  Brier = 'Brier Score',
-                                  Cal_Int = 'Calibration Intercept',
-                                  Cal_Slope = 'Calibration Slope')) 
-
-MCAR_ALL <- MCAR_ALL %>% factor(bias_all$target_measures,
-         levels = c("AUC", "Calibration Intercept", "Calibration Slope", "Brier Score"))
 
   
 
@@ -431,23 +598,6 @@ MAR_ALL <- MAR_ALLDATA_BIAS %>% mutate("imp_method" = "All data required") %>%
   bind_rows(MAR_MInoY_BIAS %>% mutate("imp_method" = "MI without Y")) %>%
   bind_rows(MAR_MIwithY_BIAS %>% mutate("imp_method" = "MI with Y")) 
 
-MAR_ALL <- MAR_ALL %>% 
-  mutate(dataset.y = recode(dataset.y, 
-                            CCA_val_data = 'CCA',
-                            MI_val_data_noY = 'MI no Y',
-                            MI_val_data_withY = 'MI with Y',
-                            mean_val = 'Imputed by mean')) 
-
-
-MAR_ALL <- MAR_ALL %>% 
-  mutate(target_measures = recode(target_measures, 
-                                  AUC = 'AUC',
-                                  Brier = 'Brier Score',
-                                  Cal_Int = 'Calibration Intercept',
-                                  Cal_Slope = 'Calibration Slope')) 
-
-MAR_ALL <- MAR_ALL %>% factor(bias_all$target_measures,
-                                levels = c("AUC", "Calibration Intercept", "Calibration Slope", "Brier Score"))
 
 ############################################################################################################################################
 # M  N  A  R - X
@@ -655,23 +805,6 @@ MNARX_ALL <- MNARX_ALLDATA_BIAS %>% mutate("imp_method" = "All data required") %
   bind_rows(MNARX_MInoY_BIAS %>% mutate("imp_method" = "MI without Y")) %>%
   bind_rows(MNARX_MIwithY_BIAS %>% mutate("imp_method" = "MI with Y")) 
 
-MNARX_ALL <- MNARX_ALL %>% 
-  mutate(dataset.y = recode(dataset.y, 
-                            CCA_val_data = 'CCA',
-                            MI_val_data_noY = 'MI no Y',
-                            MI_val_data_withY = 'MI with Y',
-                            mean_val = 'Imputed by mean')) 
-
-
-MNARX_ALL <- MNARX_ALL %>% 
-  mutate(target_measures = recode(target_measures, 
-                                  AUC = 'AUC',
-                                  Brier = 'Brier Score',
-                                  Cal_Int = 'Calibration Intercept',
-                                  Cal_Slope = 'Calibration Slope')) 
-
-MNARX_ALL <- MNARX_ALL %>% factor(bias_all$target_measures,
-                              levels = c("AUC", "Calibration Intercept", "Calibration Slope", "Brier Score"))
 
 ############################################################################################################################################
 # M  N  A  R - Y
@@ -873,29 +1006,12 @@ MNARY_MIwithY_BIAS <- subset(df_imp, DAG_type == "MNAR2" & dataset == "MI_imp_da
 
 
 
-### COMBINE ALL MNARX BIASES INTO 1 DF
+### COMBINE ALL MNARY BIASES INTO 1 DF
 MNARY_ALL <- MNARY_ALLDATA_BIAS %>% mutate("imp_method" = "All data required") %>%
   bind_rows(MNARY_MEAN_BIAS %>% mutate("imp_method" = "Imputed by mean")) %>%
   bind_rows(MNARY_MInoY_BIAS %>% mutate("imp_method" = "MI without Y")) %>%
   bind_rows(MNARY_MIwithY_BIAS %>% mutate("imp_method" = "MI with Y")) 
 
-MNARY_ALL <- MNARX_ALL %>% 
-  mutate(dataset.y = recode(dataset.y, 
-                            CCA_val_data = 'CCA',
-                            MI_val_data_noY = 'MI no Y',
-                            MI_val_data_withY = 'MI with Y',
-                            mean_val = 'Imputed by mean')) 
-
-
-MNARY_ALL <- MNARX_ALL %>% 
-  mutate(target_measures = recode(target_measures, 
-                                  AUC = 'AUC',
-                                  Brier = 'Brier Score',
-                                  Cal_Int = 'Calibration Intercept',
-                                  Cal_Slope = 'Calibration Slope')) 
-
-MNARY_ALL <- MNARX_ALL %>% factor(bias_all$target_measures,
-                                  levels = c("AUC", "Calibration Intercept", "Calibration Slope", "Brier Score"))
 
 ############################################################################################################################################
 # M  N  A  R - X Y
@@ -1105,24 +1221,6 @@ MNARXY_ALL <- MNARXY_ALLDATA_BIAS %>% mutate("imp_method" = "All data required")
   bind_rows(MNARXY_MInoY_BIAS %>% mutate("imp_method" = "MI without Y")) %>%
   bind_rows(MNARXY_MIwithY_BIAS %>% mutate("imp_method" = "MI with Y")) 
 
-MNARXY_ALL <- MNARXY_ALL %>% 
-  mutate(dataset.y = recode(dataset.y, 
-                            CCA_val_data = 'CCA',
-                            MI_val_data_noY = 'MI no Y',
-                            MI_val_data_withY = 'MI with Y',
-                            mean_val = 'Imputed by mean')) 
-
-
-MNARXY_ALL <- MNARXY_ALL %>% 
-  mutate(target_measures = recode(target_measures, 
-                                  AUC = 'AUC',
-                                  Brier = 'Brier Score',
-                                  Cal_Int = 'Calibration Intercept',
-                                  Cal_Slope = 'Calibration Slope')) 
-
-MNARXY_ALL <- MNARXY_ALL %>% factor(bias_all$target_measures,
-                                  levels = c("AUC", "Calibration Intercept", "Calibration Slope", "Brier Score"))
-
 
 
 # PLOTS
@@ -1131,13 +1229,9 @@ MNARXY_ALL <- MNARXY_ALL %>% factor(bias_all$target_measures,
 plot_scenario <- function(sn) {
   print(sn)
   
-  MCAR_ALL = MCAR_ALL
-  MAR_ALL = MAR_ALL
-  MNARX_ALL = MNARX_ALL
-  MNARY_ALL = MNARY_ALL
   MNARXY_ALL = MNARXY_ALL
   
-  plot <- ggplot(data = MNARX_ALL %>%
+  plot <- ggplot(data = MNARXY_ALL %>%
                    filter(scenario_combined == sn), 
                  aes(x = bias_mean, y = dataset.y, color = factor(target_measures),
                      shape = factor(target_measures))) + 
@@ -1172,37 +1266,36 @@ plot_scenario <- function(sn) {
   return(plot)
 }
 
+#MCAR_ALL
 plot_scenario("5846+5846") #MCAR + MCAR
 plot_scenario("5846+5927") #MCAR + MAR
 plot_scenario("5846+6170") #MCAR + MNARX
 plot_scenario("5846+5954") #MCAR + MNARY
 plot_scenario("5846+6197") #MCAR + MNARXY
 
-
-
+#MAR_ALL
 plot_scenario("5927+5927") #MAR + MAR
 plot_scenario("5927+5846") #MAR + MCAR
 plot_scenario("5927+6170") #MAR + MNARX
 plot_scenario("5927+5954") #MAR + MNARY
 plot_scenario("5927+6197") #MAR + MNARXY
 
-
+#MNARX_ALL
 plot_scenario("6170+6170") #MNARX + MNARX
 plot_scenario("6170+5846") #MNARX + MCAR
 plot_scenario("6170+5927") #MNARX + MAR
 plot_scenario("6170+5954") #MNARX + MNARY
 plot_scenario("6170+6197") #MNARX + MNARXY
 
-
-
-plot_scenario("5954+5954") #MNARY + MNARXY
+#MNARY_ALL
+plot_scenario("5954+5954") #MNARY + MNARY
 plot_scenario("5954+5846") #MNARY + MCAR
 plot_scenario("5954+5927") #MNARY + MAR
 plot_scenario("5954+6170") #MNARY + MNARX
 plot_scenario("5954+6197") #MNARY + MNARXY
 
 
-
+#MNARXY_ALL
 plot_scenario("6197+6197") #MNARXY + MNARXY
 plot_scenario("6197+5846") #MNARXY + MCAR
 plot_scenario("6197+5927") #MNARXY + MAR
