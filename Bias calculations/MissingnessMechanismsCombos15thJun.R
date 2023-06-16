@@ -1195,6 +1195,21 @@ plot_scenario("6170+6197") #MNARX + MNARXY
 
 
 
+plot_scenario("5954+5954") #MNARY + MNARXY
+plot_scenario("5954+5846") #MNARY + MCAR
+plot_scenario("5954+5927") #MNARY + MAR
+plot_scenario("5954+6170") #MNARY + MNARX
+plot_scenario("5954+6197") #MNARY + MNARXY
+
+
+
+plot_scenario("6197+6197") #MNARXY + MNARXY
+plot_scenario("6197+5846") #MNARXY + MCAR
+plot_scenario("6197+5927") #MNARXY + MAR
+plot_scenario("6197+6170") #MNARXY + MNARX
+plot_scenario("6197+5954") #MNARXY + MNARXY
+
+
 
 
 
