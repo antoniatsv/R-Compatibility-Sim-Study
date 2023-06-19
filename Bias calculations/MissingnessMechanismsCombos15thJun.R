@@ -390,7 +390,10 @@ MCAR_ALL <- MCAR_ALLDATA_BIAS %>% mutate("imp_method" = "All data required") %>%
   bind_rows(MCAR_MIwithY_BIAS %>% mutate("imp_method" = "MI with Y")) 
 
 
-  
+rm(MCAR_ALLDATA_BIAS)
+rm(MCAR_MEAN_BIAS)
+rm(MCAR_MInoY_BIAS)
+rm(MCAR_MIwithY_BIAS)
 
 ############################################################################################################################################
 # M  A  R
@@ -598,6 +601,10 @@ MAR_ALL <- MAR_ALLDATA_BIAS %>% mutate("imp_method" = "All data required") %>%
   bind_rows(MAR_MInoY_BIAS %>% mutate("imp_method" = "MI without Y")) %>%
   bind_rows(MAR_MIwithY_BIAS %>% mutate("imp_method" = "MI with Y")) 
 
+rm(MAR_ALLDATA_BIAS)
+rm(MAR_MEAN_BIAS)
+rm(MAR_MInoY_BIAS)
+rm(MAR_MIwithY_BIAS)
 
 ############################################################################################################################################
 # M  N  A  R - X
@@ -806,6 +813,12 @@ MNARX_ALL <- MNARX_ALLDATA_BIAS %>% mutate("imp_method" = "All data required") %
   bind_rows(MNARX_MIwithY_BIAS %>% mutate("imp_method" = "MI with Y")) 
 
 
+
+rm(MNARX_ALLDATA_BIAS)
+rm(MNARX_MEAN_BIAS)
+rm(MNARX_MInoY_BIAS)
+rm(MNARX_MIwithY_BIAS)
+
 ############################################################################################################################################
 # M  N  A  R - Y
 ############################################################################################################################################
@@ -1013,6 +1026,12 @@ MNARY_ALL <- MNARY_ALLDATA_BIAS %>% mutate("imp_method" = "All data required") %
   bind_rows(MNARY_MIwithY_BIAS %>% mutate("imp_method" = "MI with Y")) 
 
 
+rm(MNARY_ALLDATA_BIAS)
+rm(MNARY_MEAN_BIAS)
+rm(MNARY_MInoY_BIAS)
+rm(MNARY_MIwithY_BIAS)
+
+
 ############################################################################################################################################
 # M  N  A  R - X Y
 ############################################################################################################################################
@@ -1216,11 +1235,24 @@ MNARXY_MIwithY_BIAS <- subset(df_imp, DAG_type == "MNAR3" & dataset == "MI_imp_d
 
 
 ### COMBINE ALL MNARXY BIASES INTO 1 DF
+#NB: data frames too big to run, so save them as csv one by one and then combine (wd:25x4)
+#MNARXY_ALLDATA_BIAS <- read.csv("MNARXY_ALLDATA_BIAS.csv")
+#MNARXY_MEAN_BIAS <- read.csv("MNARXY_MEAN_BIAS.csv")
+#MNARXY_MInoY_BIAS <- read.csv("MNARXY_MInoY_BIAS.csv")
+#MNARXY_MIwithY_BIAS <- read.csv("MNARXY_MIwithY_BIAS.csv")
+
+
+#NB2: change factor levels of target measures
 MNARXY_ALL <- MNARXY_ALLDATA_BIAS %>% mutate("imp_method" = "All data required") %>%
   bind_rows(MNARXY_MEAN_BIAS %>% mutate("imp_method" = "Imputed by mean")) %>%
   bind_rows(MNARXY_MInoY_BIAS %>% mutate("imp_method" = "MI without Y")) %>%
   bind_rows(MNARXY_MIwithY_BIAS %>% mutate("imp_method" = "MI with Y")) 
 
+
+rm(MNARXY_ALLDATA_BIAS)
+rm(MNARXY_MEAN_BIAS)
+rm(MNARXY_MInoY_BIAS)
+rm(MNARXY_MIwithY_BIAS)
 
 
 # PLOTS
@@ -1229,9 +1261,9 @@ MNARXY_ALL <- MNARXY_ALLDATA_BIAS %>% mutate("imp_method" = "All data required")
 plot_scenario <- function(sn) {
   print(sn)
   
-  MNARXY_ALL = MNARXY_ALL
+  MCAR_ALL = MCAR_ALL
   
-  plot <- ggplot(data = MNARXY_ALL %>%
+  plot <- ggplot(data = MCAR_ALL %>%
                    filter(scenario_combined == sn), 
                  aes(x = bias_mean, y = dataset.y, color = factor(target_measures),
                      shape = factor(target_measures))) + 
@@ -1266,44 +1298,83 @@ plot_scenario <- function(sn) {
   return(plot)
 }
 
-#MCAR_ALL
+setwd("~/AntoniaPhD/2. RSim/RESULTScontinuous/plots_new")
+
+#MCAR_ALL: Y = R1 = 0.5
 plot_scenario("5846+5846") #MCAR + MCAR
 plot_scenario("5846+5927") #MCAR + MAR
 plot_scenario("5846+6170") #MCAR + MNARX
 plot_scenario("5846+5954") #MCAR + MNARY
 plot_scenario("5846+6197") #MCAR + MNARXY
+#MCAR_ALL: Y = 0.1, R1 = 0.5
+plot_scenario("1472+1472") #MCAR + MCAR
+plot_scenario("1472+1553") #MCAR + MAR
+plot_scenario("1472+1796") #MCAR + MNARX
+plot_scenario("1472+1580") #MCAR + MNARY
+plot_scenario("1472+1823") #MCAR + MNARXY
 
-#MAR_ALL
+
+
+
+
+#MAR_ALL: Y = R1 = 0.5
 plot_scenario("5927+5927") #MAR + MAR
 plot_scenario("5927+5846") #MAR + MCAR
 plot_scenario("5927+6170") #MAR + MNARX
 plot_scenario("5927+5954") #MAR + MNARY
 plot_scenario("5927+6197") #MAR + MNARXY
+#MAR_ALL: Y = 0.1; R1 = 0.5
+plot_scenario("1553+1553") #MAR + MAR
+plot_scenario("1553+1472") #MAR + MCAR
+plot_scenario("1553+1796") #MAR + MNARX
+plot_scenario("1553+1580") #MAR + MNARY
+plot_scenario("1553+1823") #MAR + MNARXY
 
-#MNARX_ALL
+
+
+
+#MNARX_ALL: Y = R1 = 0.5
 plot_scenario("6170+6170") #MNARX + MNARX
 plot_scenario("6170+5846") #MNARX + MCAR
 plot_scenario("6170+5927") #MNARX + MAR
 plot_scenario("6170+5954") #MNARX + MNARY
 plot_scenario("6170+6197") #MNARX + MNARXY
+#MNARX_ALL: Y = 01, R1 = 0.5
+plot_scenario("1796+1796") #MNARX + MNARX
+plot_scenario("1796+1472") #MNARX + MCAR
+plot_scenario("1796+1553") #MNARX + MAR
+plot_scenario("1796+1580") #MNARX + MNARY
+plot_scenario("1796+1823") #MNARX + MNARXY
 
-#MNARY_ALL
+
+
+#MNARY_ALL: Y = R1 = 0.5
 plot_scenario("5954+5954") #MNARY + MNARY
 plot_scenario("5954+5846") #MNARY + MCAR
 plot_scenario("5954+5927") #MNARY + MAR
 plot_scenario("5954+6170") #MNARY + MNARX
 plot_scenario("5954+6197") #MNARY + MNARXY
+#MNARY_ALL: Y = 0.1, R1 = 0.5
+plot_scenario("1580+1580") #MNARY + MNARY
+plot_scenario("1580+1472") #MNARY + MCAR
+plot_scenario("1580+1553") #MNARY + MAR
+plot_scenario("1580+1796") #MNARY + MNARX
+plot_scenario("1580+1823") #MNARY + MNARXY
 
 
-#MNARXY_ALL
+
+
+#MNARXY_ALL: Y = R1 = 0.5
 plot_scenario("6197+6197") #MNARXY + MNARXY
 plot_scenario("6197+5846") #MNARXY + MCAR
 plot_scenario("6197+5927") #MNARXY + MAR
 plot_scenario("6197+6170") #MNARXY + MNARX
 plot_scenario("6197+5954") #MNARXY + MNARXY
+#MNARXY_ALL Y = 0.1
+plot_scenario("1823+1823") #MNARXY + MNARXY
+plot_scenario("1823+1472") #MNARXY + MCAR
+plot_scenario("1823+1553") #MNARXY + MAR
+plot_scenario("1823+1796") #MNARXY + MNARX
+plot_scenario("1823+1580") #MNARXY + MNARXY
 
-
-
-
-
-
+######
