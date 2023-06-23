@@ -167,7 +167,7 @@ df_DAG$target_measures <- factor(df_DAG$target_measures,
 
 
 
-##############################################################################################################
+###################################################################
 #(1) split data into val and imp datasets
 df_val <- df_DAG[df_DAG$dataset %like% "val", ]
 df_imp <- df_DAG[df_DAG$dataset %like% "imp", ]
@@ -183,8 +183,9 @@ df_val <- df_val %>%
       TRUE ~ dataset))
 
 
+
 ############################################################################################################################################
-# M   C   A   R
+# NO MISSINGNESS ALLOWED AT DEPLOYMENT
 ############################################################################################################################################
 
 ### MCAR ***ALL DATA REQUIRED***
@@ -206,13 +207,19 @@ MCAR_ALLDATA_BIAS <- subset(df_imp, DAG_type == "MCAR" & dataset == "all_data_im
                    "gamma_x1",       
                    "gamma_x2",       
                    "gamma_U")) %>%
+  rename("dataset_imp" = "dataset.x",
+         "dataset_val" = "dataset.y",
+         "scenario_number_imp" = "scenario_number.x",
+         "scenario_number_val" = "scenario_number.y",
+         "DAG_type_imp" = "DAG_type.x",
+         "DAG_type_val" = "DAG_type.y") %>%
   mutate(bias = estimates - true_estimates,
-         DAG_combined = paste(DAG_type.x, DAG_type.y, sep = "+")) %>%
-  group_by(dataset.x, 
-           dataset.y,
+         DAG_combined = paste(DAG_type_imp, DAG_type_val, sep = "+")) %>%
+  group_by(dataset_imp, 
+           dataset_val,
            target_measures, 
-           scenario_number.x,
-           scenario_number.y,
+           scenario_number_imp,
+           scenario_number_val,
            N, 
            N_dev, 
            N_val, 
@@ -231,8 +238,252 @@ MCAR_ALLDATA_BIAS <- subset(df_imp, DAG_type == "MCAR" & dataset == "all_data_im
            gamma_U,
            DAG_combined) %>% 
   summarise(bias_mean = mean(bias), LCI = quantile(bias, 0.025), UCI = quantile(bias, 0.975)) %>%
-  mutate(scenario_combined = paste(scenario_number.x, scenario_number.y, sep = "+"))
+  mutate(scenario_combined = paste(scenario_number_imp, scenario_number_val, sep = "+"))
 
+
+
+
+
+### MAR ***ALL DATA REQUIRED***
+MAR_ALLDATA_BIAS <- subset(df_imp, DAG_type == "MAR" & dataset == "all_data_imp") %>%
+  rename_at(vars("estimates"), function(x) paste0("true_", x)) %>%
+  left_join(df_val, MAR_ALLDATA_BIAS, 
+            multiple = "all", 
+            by = c("Iteration",
+                   "mod",
+                   "target_measures",
+                   "n_iter",          
+                   "N",
+                   "N_dev",
+                   "N_imp",
+                   "N_val", 
+                   "Y_prev",          
+                   "X_categorical",   
+                   "R_prev",
+                   "gamma_x1",       
+                   "gamma_x2",       
+                   "gamma_U")) %>%
+  rename("dataset_imp" = "dataset.x",
+         "dataset_val" = "dataset.y",
+         "scenario_number_imp" = "scenario_number.x",
+         "scenario_number_val" = "scenario_number.y",
+         "DAG_type_imp" = "DAG_type.x",
+         "DAG_type_val" = "DAG_type.y") %>%
+  mutate(bias = estimates - true_estimates,
+         DAG_combined = paste(DAG_type_imp, DAG_type_val, sep = "+")) %>%
+  group_by(dataset_imp, 
+           dataset_val,
+           target_measures, 
+           scenario_number_imp,
+           scenario_number_val,
+           N, 
+           N_dev, 
+           N_val, 
+           N_imp, 
+           Y_prev, 
+           R_prev, 
+           X_categorical,
+           beta_x1.x,
+           beta_x2.x,
+           beta_U.x,
+           beta_x1.y,
+           beta_x2.y,
+           beta_U.y,
+           gamma_x1, 
+           gamma_x2, 
+           gamma_U,
+           DAG_combined) %>% 
+  summarise(bias_mean = mean(bias), LCI = quantile(bias, 0.025), UCI = quantile(bias, 0.975)) %>%
+  mutate(scenario_combined = paste(scenario_number_imp, scenario_number_val, sep = "+"))
+
+
+
+### MNARX ***ALL DATA REQUIRED***
+MNARX_ALLDATA_BIAS <- subset(df_imp, DAG_type == "MNAR1" & dataset == "all_data_imp") %>%
+  rename_at(vars("estimates"), function(x) paste0("true_", x)) %>%
+  left_join(df_val, MNARX_ALLDATA_BIAS, 
+            multiple = "all", 
+            by = c("Iteration",
+                   "mod",
+                   "target_measures",
+                   "n_iter",          
+                   "N",
+                   "N_dev",
+                   "N_imp",
+                   "N_val", 
+                   "Y_prev",          
+                   "X_categorical",   
+                   "R_prev",
+                   "gamma_x1",       
+                   "gamma_x2",       
+                   "gamma_U")) %>%
+  rename("dataset_imp" = "dataset.x",
+         "dataset_val" = "dataset.y",
+         "scenario_number_imp" = "scenario_number.x",
+         "scenario_number_val" = "scenario_number.y",
+         "DAG_type_imp" = "DAG_type.x",
+         "DAG_type_val" = "DAG_type.y") %>%
+  mutate(bias = estimates - true_estimates,
+         DAG_combined = paste(DAG_type_imp, DAG_type_val, sep = "+")) %>%
+  group_by(dataset_imp, 
+           dataset_val,
+           target_measures, 
+           scenario_number_imp,
+           scenario_number_val,
+           N, 
+           N_dev, 
+           N_val, 
+           N_imp, 
+           Y_prev, 
+           R_prev, 
+           X_categorical,
+           beta_x1.x,
+           beta_x2.x,
+           beta_U.x,
+           beta_x1.y,
+           beta_x2.y,
+           beta_U.y,
+           gamma_x1, 
+           gamma_x2, 
+           gamma_U,
+           DAG_combined) %>% 
+  summarise(bias_mean = mean(bias), LCI = quantile(bias, 0.025), UCI = quantile(bias, 0.975)) %>%
+  mutate(scenario_combined = paste(scenario_number_imp, scenario_number_val, sep = "+"))
+
+
+### MNARY ***ALL DATA REQUIRED***
+MNARY_ALLDATA_BIAS <- subset(df_imp, DAG_type == "MNAR2" & dataset == "all_data_imp") %>%
+  rename_at(vars("estimates"), function(x) paste0("true_", x)) %>%
+  left_join(df_val, MNARY_ALLDATA_BIAS, 
+            multiple = "all", 
+            by = c("Iteration",
+                   "mod",
+                   "target_measures",
+                   "n_iter",          
+                   "N",
+                   "N_dev",
+                   "N_imp",
+                   "N_val", 
+                   "Y_prev",          
+                   "X_categorical",   
+                   "R_prev",
+                   "gamma_x1",       
+                   "gamma_x2",       
+                   "gamma_U")) %>%
+  rename("dataset_imp" = "dataset.x",
+         "dataset_val" = "dataset.y",
+         "scenario_number_imp" = "scenario_number.x",
+         "scenario_number_val" = "scenario_number.y",
+         "DAG_type_imp" = "DAG_type.x",
+         "DAG_type_val" = "DAG_type.y") %>%
+  mutate(bias = estimates - true_estimates,
+         DAG_combined = paste(DAG_type_imp, DAG_type_val, sep = "+")) %>%
+  group_by(dataset_imp, 
+           dataset_val,
+           target_measures, 
+           scenario_number_imp,
+           scenario_number_val,
+           N, 
+           N_dev, 
+           N_val, 
+           N_imp, 
+           Y_prev, 
+           R_prev, 
+           X_categorical,
+           beta_x1.x,
+           beta_x2.x,
+           beta_U.x,
+           beta_x1.y,
+           beta_x2.y,
+           beta_U.y,
+           gamma_x1, 
+           gamma_x2, 
+           gamma_U,
+           DAG_combined) %>% 
+  summarise(bias_mean = mean(bias), LCI = quantile(bias, 0.025), UCI = quantile(bias, 0.975)) %>%
+  mutate(scenario_combined = paste(scenario_number_imp, scenario_number_val, sep = "+"))
+
+
+
+### MNARXY ***ALL DATA REQUIRED***
+MNARXY_ALLDATA_BIAS <- read.csv("MNARXY_ALLDATA_BIAS.csv")
+MNARXY_ALLDATA_BIAS <- subset(MNARXY_ALLDATA, select = -X)
+
+
+MNARXY_ALLDATA_BIAS <- MNARXY_ALLDATA %>% rename("dataset_imp" = "dataset.x",
+                                                 "dataset_val" = "dataset.y",
+                                                 "scenario_number_imp" = "scenario_number.x",
+                                                 "scenario_number_val" = "scenario_number.y")
+
+
+
+
+PLOT_ALL <- MCAR_ALLDATA_BIAS %>% mutate("DAG_plot" = "MCAR") %>%
+  bind_rows(MAR_ALLDATA_BIAS %>% mutate("DAG_plot" = "MAR")) %>%
+  bind_rows(MNARX_ALLDATA_BIAS %>% mutate("DAG_plot" = "MNARX")) %>%
+  bind_rows(MNARY_ALLDATA_BIAS %>% mutate("DAG_plot" = "MNARY")) %>%
+  bind_rows(MNARXY_ALLDATA_BIAS %>% mutate("DAG_plot" = "MNARXY"))
+
+
+## PLOT ALL DATA REQUIRED FOR ALL MISSINGNESS MECHANISMS
+plot_scenario <- function() {
+  PLOT_ALL <- rbind(
+    PLOT_ALL %>% filter(scenario_number_val == 5846) %>% mutate(DAG_plot = "MCAR"),
+    PLOT_ALL %>% filter(scenario_number_val == 5927) %>% mutate(DAG_plot = "MAR"),
+    PLOT_ALL %>% filter(scenario_number_val == 6170) %>% mutate(DAG_plot = "MNARX"),
+    PLOT_ALL %>% filter(scenario_number_val == 5954) %>% mutate(DAG_plot = "MNARY"),
+    PLOT_ALL %>% filter(scenario_number_val == 6197) %>% mutate(DAG_plot = "MNARXY")
+  )
+  
+  # Update the order of the levels in DAG_plot and target_measures factors
+  PLOT_ALL$DAG_plot <- factor(PLOT_ALL$DAG_plot, levels = c("MCAR", "MAR", "MNARX", "MNARY", "MNARXY"))
+  
+  PLOT_ALL$target_measures <- factor(PLOT_ALL$target_measures, levels = c("AUC", "Calibration Intercept", "Calibration Slope", "Brier Score"))
+  
+  plot <- ggplot(data = PLOT_ALL, aes(x = bias_mean, y = dataset_val, color = factor(target_measures),
+                                      shape = factor(target_measures))) +
+    geom_errorbar(aes(xmin = LCI, xmax = UCI), width = .1) +
+    geom_point(size = 3, stroke = 0.5) +
+    guides(color = guide_legend(reverse = TRUE)) +
+    scale_shape_manual(values = c(8, 17, 16, 15)) +
+    scale_color_brewer(palette = "Set1") +
+    geom_vline(xintercept = 0, linetype = "dotted") +
+    xlab("Bias Mean") +
+    ylab("Validation Data Imputation Methods") +
+    theme_minimal() +
+    theme(
+      legend.position = "none",
+      axis.text = element_text(size = 14),
+      axis.title = element_text(size = 16, face = "bold"),
+      axis.text.x = element_text(size = 14),
+      axis.text.y = element_text(size = 14),
+      strip.text = element_text(size = 16),
+      panel.background = element_rect(fill = "gray90"),
+      panel.spacing.x = unit(0.5, "lines")
+    ) +
+    ggh4x::facet_grid2(target_measures ~ DAG_plot, scales = "free_x", independent = "x") +
+    scale_x_continuous(limits = function(x) c(-max(abs(x)), max(abs(x)))) +
+    theme(
+      panel.border = element_rect(color = "black", fill = NA, size = 1.5),
+      strip.text = element_text(size = 14, hjust = 0.5),
+      strip.placement = "outside"
+    ) +
+    ggtitle("Missingness mechanisms at model validation") +
+    theme(plot.title = element_text(face = "bold", size = 16, hjust = 0.5))
+  plot <- plot + theme(panel.grid.major = element_line(size = 1.5))
+  
+  # Return the plot
+  return(plot)
+}
+
+# Call the function to generate the plot
+plot_all_scenarios <- plot_scenario()
+print(plot_all_scenarios)
+
+
+############################################################################################################################################
+# M   C   A   R 
+############################################################################################################################################
 
 
 ### MCAR ***MEAN***
@@ -254,13 +505,19 @@ MCAR_MEAN_BIAS <- subset(df_imp, DAG_type == "MCAR" & dataset == "mean_imp") %>%
                    "gamma_x1",       
                    "gamma_x2",       
                    "gamma_U")) %>%
+  rename("dataset_imp" = "dataset.x",
+         "dataset_val" = "dataset.y",
+         "scenario_number_imp" = "scenario_number.x",
+         "scenario_number_val" = "scenario_number.y",
+         "DAG_type_imp" = "DAG_type.x",
+         "DAG_type_val" = "DAG_type.y") %>%
   mutate(bias = estimates - true_estimates,
-         DAG_combined = paste(DAG_type.x, DAG_type.y, sep = "+")) %>%
-  group_by(dataset.x, 
-           dataset.y,
+         DAG_combined = paste(DAG_type_imp, DAG_type_val, sep = "+")) %>%
+  group_by(dataset_imp, 
+           dataset_val,
            target_measures, 
-           scenario_number.x,
-           scenario_number.y,
+           scenario_number_imp,
+           scenario_number_val,
            N, 
            N_dev, 
            N_val, 
@@ -279,7 +536,7 @@ MCAR_MEAN_BIAS <- subset(df_imp, DAG_type == "MCAR" & dataset == "mean_imp") %>%
            gamma_U,
            DAG_combined) %>% 
   summarise(bias_mean = mean(bias), LCI = quantile(bias, 0.025), UCI = quantile(bias, 0.975)) %>%
-  mutate(scenario_combined = paste(scenario_number.x, scenario_number.y, sep = "+"))
+  mutate(scenario_combined = paste(scenario_number_imp, scenario_number_val, sep = "+"))
 
 
 
@@ -304,13 +561,19 @@ MCAR_MInoY_BIAS <- subset(df_imp, DAG_type == "MCAR" & dataset == "MI_imp_data_n
                    "gamma_x1",       
                    "gamma_x2",       
                    "gamma_U")) %>%
+  rename("dataset_imp" = "dataset.x",
+         "dataset_val" = "dataset.y",
+         "scenario_number_imp" = "scenario_number.x",
+         "scenario_number_val" = "scenario_number.y",
+         "DAG_type_imp" = "DAG_type.x",
+         "DAG_type_val" = "DAG_type.y") %>%
   mutate(bias = estimates - true_estimates,
-         DAG_combined = paste(DAG_type.x, DAG_type.y, sep = "+")) %>%
-  group_by(dataset.x, 
-           dataset.y,
+         DAG_combined = paste(DAG_type_imp, DAG_type_val, sep = "+")) %>%
+  group_by(dataset_imp, 
+           dataset_val,
            target_measures, 
-           scenario_number.x,
-           scenario_number.y,
+           scenario_number_imp,
+           scenario_number_val,
            N, 
            N_dev, 
            N_val, 
@@ -329,7 +592,7 @@ MCAR_MInoY_BIAS <- subset(df_imp, DAG_type == "MCAR" & dataset == "MI_imp_data_n
            gamma_U,
            DAG_combined) %>% 
   summarise(bias_mean = mean(bias), LCI = quantile(bias, 0.025), UCI = quantile(bias, 0.975)) %>%
-  mutate(scenario_combined = paste(scenario_number.x, scenario_number.y, sep = "+"))
+  mutate(scenario_combined = paste(scenario_number_imp, scenario_number_val, sep = "+"))
 
 
 
@@ -354,13 +617,19 @@ MCAR_MIwithY_BIAS <- subset(df_imp, DAG_type == "MCAR" & dataset == "MI_imp_data
                    "gamma_x1",       
                    "gamma_x2",       
                    "gamma_U")) %>%
+  rename("dataset_imp" = "dataset.x",
+         "dataset_val" = "dataset.y",
+         "scenario_number_imp" = "scenario_number.x",
+         "scenario_number_val" = "scenario_number.y",
+         "DAG_type_imp" = "DAG_type.x",
+         "DAG_type_val" = "DAG_type.y") %>%
   mutate(bias = estimates - true_estimates,
-         DAG_combined = paste(DAG_type.x, DAG_type.y, sep = "+")) %>%
-  group_by(dataset.x, 
-           dataset.y,
+         DAG_combined = paste(DAG_type_imp, DAG_type_val, sep = "+")) %>%
+  group_by(dataset_imp, 
+           dataset_val,
            target_measures, 
-           scenario_number.x,
-           scenario_number.y,
+           scenario_number_imp,
+           scenario_number_val,
            N, 
            N_dev, 
            N_val, 
@@ -379,18 +648,18 @@ MCAR_MIwithY_BIAS <- subset(df_imp, DAG_type == "MCAR" & dataset == "MI_imp_data
            gamma_U,
            DAG_combined) %>% 
   summarise(bias_mean = mean(bias), LCI = quantile(bias, 0.025), UCI = quantile(bias, 0.975)) %>%
-  mutate(scenario_combined = paste(scenario_number.x, scenario_number.y, sep = "+"))
+  mutate(scenario_combined = paste(scenario_number_imp, scenario_number_val, sep = "+"))
+
 
 
 
 ### COMBINE ALL MCAR BIASES INTO 1 DF
-MCAR_ALL <- MCAR_ALLDATA_BIAS %>% mutate("imp_method" = "All data required") %>%
-  bind_rows(MCAR_MEAN_BIAS %>% mutate("imp_method" = "Imputed by mean")) %>%
+MCAR_ALL <- MCAR_MEAN_BIAS %>% mutate("imp_method" = "Imputed by mean") %>%
   bind_rows(MCAR_MInoY_BIAS %>% mutate("imp_method" = "MI without Y")) %>%
   bind_rows(MCAR_MIwithY_BIAS %>% mutate("imp_method" = "MI with Y")) 
 
 
-rm(MCAR_ALLDATA_BIAS)
+
 rm(MCAR_MEAN_BIAS)
 rm(MCAR_MInoY_BIAS)
 rm(MCAR_MIwithY_BIAS)
@@ -398,53 +667,6 @@ rm(MCAR_MIwithY_BIAS)
 ############################################################################################################################################
 # M  A  R
 ############################################################################################################################################
-
-### MAR ***ALL DATA REQUIRED***
-MAR_ALLDATA_BIAS <- subset(df_imp, DAG_type == "MAR" & dataset == "all_data_imp") %>%
-  rename_at(vars("estimates"), function(x) paste0("true_", x)) %>%
-  left_join(df_val, MAR_ALLDATA_BIAS, 
-            multiple = "all", 
-            by = c("Iteration",
-                   "mod",
-                   "target_measures",
-                   "n_iter",          
-                   "N",
-                   "N_dev",
-                   "N_imp",
-                   "N_val", 
-                   "Y_prev",          
-                   "X_categorical",   
-                   "R_prev",
-                   "gamma_x1",       
-                   "gamma_x2",       
-                   "gamma_U")) %>%
-  mutate(bias = estimates - true_estimates,
-         DAG_combined = paste(DAG_type.x, DAG_type.y, sep = "+")) %>%
-  group_by(dataset.x, 
-           dataset.y,
-           target_measures, 
-           scenario_number.x,
-           scenario_number.y,
-           N, 
-           N_dev, 
-           N_val, 
-           N_imp, 
-           Y_prev, 
-           R_prev, 
-           X_categorical,
-           beta_x1.x,
-           beta_x2.x,
-           beta_U.x,
-           beta_x1.y,
-           beta_x2.y,
-           beta_U.y,
-           gamma_x1, 
-           gamma_x2, 
-           gamma_U,
-           DAG_combined) %>% 
-  summarise(bias_mean = mean(bias), LCI = quantile(bias, 0.025), UCI = quantile(bias, 0.975)) %>%
-  mutate(scenario_combined = paste(scenario_number.x, scenario_number.y, sep = "+"))
-
 
 
 ### MAR ***MEAN***
@@ -466,13 +688,19 @@ MAR_MEAN_BIAS <- subset(df_imp, DAG_type == "MAR" & dataset == "mean_imp") %>%
                    "gamma_x1",       
                    "gamma_x2",       
                    "gamma_U")) %>%
+  rename("dataset_imp" = "dataset.x",
+         "dataset_val" = "dataset.y",
+         "scenario_number_imp" = "scenario_number.x",
+         "scenario_number_val" = "scenario_number.y",
+         "DAG_type_imp" = "DAG_type.x",
+         "DAG_type_val" = "DAG_type.y") %>%
   mutate(bias = estimates - true_estimates,
-         DAG_combined = paste(DAG_type.x, DAG_type.y, sep = "+")) %>%
-  group_by(dataset.x, 
-           dataset.y,
+         DAG_combined = paste(DAG_type_imp, DAG_type_val, sep = "+")) %>%
+  group_by(dataset_imp, 
+           dataset_val,
            target_measures, 
-           scenario_number.x,
-           scenario_number.y,
+           scenario_number_imp,
+           scenario_number_val,
            N, 
            N_dev, 
            N_val, 
@@ -491,7 +719,8 @@ MAR_MEAN_BIAS <- subset(df_imp, DAG_type == "MAR" & dataset == "mean_imp") %>%
            gamma_U,
            DAG_combined) %>% 
   summarise(bias_mean = mean(bias), LCI = quantile(bias, 0.025), UCI = quantile(bias, 0.975)) %>%
-  mutate(scenario_combined = paste(scenario_number.x, scenario_number.y, sep = "+"))
+  mutate(scenario_combined = paste(scenario_number_imp, scenario_number_val, sep = "+"))
+
 
 
 
@@ -516,13 +745,19 @@ MAR_MInoY_BIAS <- subset(df_imp, DAG_type == "MAR" & dataset == "MI_imp_data_noY
                    "gamma_x1",       
                    "gamma_x2",       
                    "gamma_U")) %>%
+  rename("dataset_imp" = "dataset.x",
+         "dataset_val" = "dataset.y",
+         "scenario_number_imp" = "scenario_number.x",
+         "scenario_number_val" = "scenario_number.y",
+         "DAG_type_imp" = "DAG_type.x",
+         "DAG_type_val" = "DAG_type.y") %>%
   mutate(bias = estimates - true_estimates,
-         DAG_combined = paste(DAG_type.x, DAG_type.y, sep = "+")) %>%
-  group_by(dataset.x, 
-           dataset.y,
+         DAG_combined = paste(DAG_type_imp, DAG_type_val, sep = "+")) %>%
+  group_by(dataset_imp, 
+           dataset_val,
            target_measures, 
-           scenario_number.x,
-           scenario_number.y,
+           scenario_number_imp,
+           scenario_number_val,
            N, 
            N_dev, 
            N_val, 
@@ -541,7 +776,7 @@ MAR_MInoY_BIAS <- subset(df_imp, DAG_type == "MAR" & dataset == "MI_imp_data_noY
            gamma_U,
            DAG_combined) %>% 
   summarise(bias_mean = mean(bias), LCI = quantile(bias, 0.025), UCI = quantile(bias, 0.975)) %>%
-  mutate(scenario_combined = paste(scenario_number.x, scenario_number.y, sep = "+"))
+  mutate(scenario_combined = paste(scenario_number_imp, scenario_number_val, sep = "+"))
 
 
 
@@ -566,13 +801,19 @@ MAR_MIwithY_BIAS <- subset(df_imp, DAG_type == "MAR" & dataset == "MI_imp_data_w
                    "gamma_x1",       
                    "gamma_x2",       
                    "gamma_U")) %>%
+  rename("dataset_imp" = "dataset.x",
+         "dataset_val" = "dataset.y",
+         "scenario_number_imp" = "scenario_number.x",
+         "scenario_number_val" = "scenario_number.y",
+         "DAG_type_imp" = "DAG_type.x",
+         "DAG_type_val" = "DAG_type.y") %>%
   mutate(bias = estimates - true_estimates,
-         DAG_combined = paste(DAG_type.x, DAG_type.y, sep = "+")) %>%
-  group_by(dataset.x, 
-           dataset.y,
+         DAG_combined = paste(DAG_type_imp, DAG_type_val, sep = "+")) %>%
+  group_by(dataset_imp, 
+           dataset_val,
            target_measures, 
-           scenario_number.x,
-           scenario_number.y,
+           scenario_number_imp,
+           scenario_number_val,
            N, 
            N_dev, 
            N_val, 
@@ -591,17 +832,16 @@ MAR_MIwithY_BIAS <- subset(df_imp, DAG_type == "MAR" & dataset == "MI_imp_data_w
            gamma_U,
            DAG_combined) %>% 
   summarise(bias_mean = mean(bias), LCI = quantile(bias, 0.025), UCI = quantile(bias, 0.975)) %>%
-  mutate(scenario_combined = paste(scenario_number.x, scenario_number.y, sep = "+"))
+  mutate(scenario_combined = paste(scenario_number_imp, scenario_number_val, sep = "+"))
 
 
 
 ### COMBINE ALL MAR BIASES INTO 1 DF
-MAR_ALL <- MAR_ALLDATA_BIAS %>% mutate("imp_method" = "All data required") %>%
-  bind_rows(MAR_MEAN_BIAS %>% mutate("imp_method" = "Imputed by mean")) %>%
+MAR_ALL <- MAR_MEAN_BIAS %>% mutate("imp_method" = "Imputed by mean") %>%
   bind_rows(MAR_MInoY_BIAS %>% mutate("imp_method" = "MI without Y")) %>%
   bind_rows(MAR_MIwithY_BIAS %>% mutate("imp_method" = "MI with Y")) 
 
-rm(MAR_ALLDATA_BIAS)
+
 rm(MAR_MEAN_BIAS)
 rm(MAR_MInoY_BIAS)
 rm(MAR_MIwithY_BIAS)
@@ -609,53 +849,6 @@ rm(MAR_MIwithY_BIAS)
 ############################################################################################################################################
 # M  N  A  R - X
 ############################################################################################################################################
-
-### MNARX ***ALL DATA REQUIRED***
-MNARX_ALLDATA_BIAS <- subset(df_imp, DAG_type == "MNAR1" & dataset == "all_data_imp") %>%
-  rename_at(vars("estimates"), function(x) paste0("true_", x)) %>%
-  left_join(df_val, MNARX_ALLDATA_BIAS, 
-            multiple = "all", 
-            by = c("Iteration",
-                   "mod",
-                   "target_measures",
-                   "n_iter",          
-                   "N",
-                   "N_dev",
-                   "N_imp",
-                   "N_val", 
-                   "Y_prev",          
-                   "X_categorical",   
-                   "R_prev",
-                   "gamma_x1",       
-                   "gamma_x2",       
-                   "gamma_U")) %>%
-  mutate(bias = estimates - true_estimates,
-         DAG_combined = paste(DAG_type.x, DAG_type.y, sep = "+")) %>%
-  group_by(dataset.x, 
-           dataset.y,
-           target_measures, 
-           scenario_number.x,
-           scenario_number.y,
-           N, 
-           N_dev, 
-           N_val, 
-           N_imp, 
-           Y_prev, 
-           R_prev, 
-           X_categorical,
-           beta_x1.x,
-           beta_x2.x,
-           beta_U.x,
-           beta_x1.y,
-           beta_x2.y,
-           beta_U.y,
-           gamma_x1, 
-           gamma_x2, 
-           gamma_U,
-           DAG_combined) %>% 
-  summarise(bias_mean = mean(bias), LCI = quantile(bias, 0.025), UCI = quantile(bias, 0.975)) %>%
-  mutate(scenario_combined = paste(scenario_number.x, scenario_number.y, sep = "+"))
-
 
 
 ### MNARX ***MEAN***
@@ -677,13 +870,19 @@ MNARX_MEAN_BIAS <- subset(df_imp, DAG_type == "MNAR1" & dataset == "mean_imp") %
                    "gamma_x1",       
                    "gamma_x2",       
                    "gamma_U")) %>%
+  rename("dataset_imp" = "dataset.x",
+         "dataset_val" = "dataset.y",
+         "scenario_number_imp" = "scenario_number.x",
+         "scenario_number_val" = "scenario_number.y",
+         "DAG_type_imp" = "DAG_type.x",
+         "DAG_type_val" = "DAG_type.y") %>%
   mutate(bias = estimates - true_estimates,
-         DAG_combined = paste(DAG_type.x, DAG_type.y, sep = "+")) %>%
-  group_by(dataset.x, 
-           dataset.y,
+         DAG_combined = paste(DAG_type_imp, DAG_type_val, sep = "+")) %>%
+  group_by(dataset_imp, 
+           dataset_val,
            target_measures, 
-           scenario_number.x,
-           scenario_number.y,
+           scenario_number_imp,
+           scenario_number_val,
            N, 
            N_dev, 
            N_val, 
@@ -702,7 +901,8 @@ MNARX_MEAN_BIAS <- subset(df_imp, DAG_type == "MNAR1" & dataset == "mean_imp") %
            gamma_U,
            DAG_combined) %>% 
   summarise(bias_mean = mean(bias), LCI = quantile(bias, 0.025), UCI = quantile(bias, 0.975)) %>%
-  mutate(scenario_combined = paste(scenario_number.x, scenario_number.y, sep = "+"))
+  mutate(scenario_combined = paste(scenario_number_imp, scenario_number_val, sep = "+"))
+
 
 
 
@@ -727,13 +927,19 @@ MNARX_MInoY_BIAS <- subset(df_imp, DAG_type == "MNAR1" & dataset == "MI_imp_data
                    "gamma_x1",       
                    "gamma_x2",       
                    "gamma_U")) %>%
+  rename("dataset_imp" = "dataset.x",
+         "dataset_val" = "dataset.y",
+         "scenario_number_imp" = "scenario_number.x",
+         "scenario_number_val" = "scenario_number.y",
+         "DAG_type_imp" = "DAG_type.x",
+         "DAG_type_val" = "DAG_type.y") %>%
   mutate(bias = estimates - true_estimates,
-         DAG_combined = paste(DAG_type.x, DAG_type.y, sep = "+")) %>%
-  group_by(dataset.x, 
-           dataset.y,
+         DAG_combined = paste(DAG_type_imp, DAG_type_val, sep = "+")) %>%
+  group_by(dataset_imp, 
+           dataset_val,
            target_measures, 
-           scenario_number.x,
-           scenario_number.y,
+           scenario_number_imp,
+           scenario_number_val,
            N, 
            N_dev, 
            N_val, 
@@ -752,7 +958,7 @@ MNARX_MInoY_BIAS <- subset(df_imp, DAG_type == "MNAR1" & dataset == "MI_imp_data
            gamma_U,
            DAG_combined) %>% 
   summarise(bias_mean = mean(bias), LCI = quantile(bias, 0.025), UCI = quantile(bias, 0.975)) %>%
-  mutate(scenario_combined = paste(scenario_number.x, scenario_number.y, sep = "+"))
+  mutate(scenario_combined = paste(scenario_number_imp, scenario_number_val, sep = "+"))
 
 
 
@@ -777,13 +983,19 @@ MNARX_MIwithY_BIAS <- subset(df_imp, DAG_type == "MNAR1" & dataset == "MI_imp_da
                    "gamma_x1",       
                    "gamma_x2",       
                    "gamma_U")) %>%
+  rename("dataset_imp" = "dataset.x",
+         "dataset_val" = "dataset.y",
+         "scenario_number_imp" = "scenario_number.x",
+         "scenario_number_val" = "scenario_number.y",
+         "DAG_type_imp" = "DAG_type.x",
+         "DAG_type_val" = "DAG_type.y") %>%
   mutate(bias = estimates - true_estimates,
-         DAG_combined = paste(DAG_type.x, DAG_type.y, sep = "+")) %>%
-  group_by(dataset.x, 
-           dataset.y,
+         DAG_combined = paste(DAG_type_imp, DAG_type_val, sep = "+")) %>%
+  group_by(dataset_imp, 
+           dataset_val,
            target_measures, 
-           scenario_number.x,
-           scenario_number.y,
+           scenario_number_imp,
+           scenario_number_val,
            N, 
            N_dev, 
            N_val, 
@@ -802,19 +1014,19 @@ MNARX_MIwithY_BIAS <- subset(df_imp, DAG_type == "MNAR1" & dataset == "MI_imp_da
            gamma_U,
            DAG_combined) %>% 
   summarise(bias_mean = mean(bias), LCI = quantile(bias, 0.025), UCI = quantile(bias, 0.975)) %>%
-  mutate(scenario_combined = paste(scenario_number.x, scenario_number.y, sep = "+"))
+  mutate(scenario_combined = paste(scenario_number_imp, scenario_number_val, sep = "+"))
+
 
 
 
 ### COMBINE ALL MNARX BIASES INTO 1 DF
-MNARX_ALL <- MNARX_ALLDATA_BIAS %>% mutate("imp_method" = "All data required") %>%
-  bind_rows(MNARX_MEAN_BIAS %>% mutate("imp_method" = "Imputed by mean")) %>%
+MNARX_ALL <- MNARX_MEAN_BIAS %>% mutate("imp_method" = "Imputed by mean") %>%
   bind_rows(MNARX_MInoY_BIAS %>% mutate("imp_method" = "MI without Y")) %>%
   bind_rows(MNARX_MIwithY_BIAS %>% mutate("imp_method" = "MI with Y")) 
 
 
 
-rm(MNARX_ALLDATA_BIAS)
+
 rm(MNARX_MEAN_BIAS)
 rm(MNARX_MInoY_BIAS)
 rm(MNARX_MIwithY_BIAS)
@@ -822,53 +1034,6 @@ rm(MNARX_MIwithY_BIAS)
 ############################################################################################################################################
 # M  N  A  R - Y
 ############################################################################################################################################
-
-### MNARY ***ALL DATA REQUIRED***
-MNARY_ALLDATA_BIAS <- subset(df_imp, DAG_type == "MNAR2" & dataset == "all_data_imp") %>%
-  rename_at(vars("estimates"), function(x) paste0("true_", x)) %>%
-  left_join(df_val, MNARY_ALLDATA_BIAS, 
-            multiple = "all", 
-            by = c("Iteration",
-                   "mod",
-                   "target_measures",
-                   "n_iter",          
-                   "N",
-                   "N_dev",
-                   "N_imp",
-                   "N_val", 
-                   "Y_prev",          
-                   "X_categorical",   
-                   "R_prev",
-                   "gamma_x1",       
-                   "gamma_x2",       
-                   "gamma_U")) %>%
-  mutate(bias = estimates - true_estimates,
-         DAG_combined = paste(DAG_type.x, DAG_type.y, sep = "+")) %>%
-  group_by(dataset.x, 
-           dataset.y,
-           target_measures, 
-           scenario_number.x,
-           scenario_number.y,
-           N, 
-           N_dev, 
-           N_val, 
-           N_imp, 
-           Y_prev, 
-           R_prev, 
-           X_categorical,
-           beta_x1.x,
-           beta_x2.x,
-           beta_U.x,
-           beta_x1.y,
-           beta_x2.y,
-           beta_U.y,
-           gamma_x1, 
-           gamma_x2, 
-           gamma_U,
-           DAG_combined) %>% 
-  summarise(bias_mean = mean(bias), LCI = quantile(bias, 0.025), UCI = quantile(bias, 0.975)) %>%
-  mutate(scenario_combined = paste(scenario_number.x, scenario_number.y, sep = "+"))
-
 
 
 ### MNARY ***MEAN***
@@ -890,13 +1055,19 @@ MNARY_MEAN_BIAS <- subset(df_imp, DAG_type == "MNAR2" & dataset == "mean_imp") %
                    "gamma_x1",       
                    "gamma_x2",       
                    "gamma_U")) %>%
+  rename("dataset_imp" = "dataset.x",
+         "dataset_val" = "dataset.y",
+         "scenario_number_imp" = "scenario_number.x",
+         "scenario_number_val" = "scenario_number.y",
+         "DAG_type_imp" = "DAG_type.x",
+         "DAG_type_val" = "DAG_type.y") %>%
   mutate(bias = estimates - true_estimates,
-         DAG_combined = paste(DAG_type.x, DAG_type.y, sep = "+")) %>%
-  group_by(dataset.x, 
-           dataset.y,
+         DAG_combined = paste(DAG_type_imp, DAG_type_val, sep = "+")) %>%
+  group_by(dataset_imp, 
+           dataset_val,
            target_measures, 
-           scenario_number.x,
-           scenario_number.y,
+           scenario_number_imp,
+           scenario_number_val,
            N, 
            N_dev, 
            N_val, 
@@ -915,7 +1086,8 @@ MNARY_MEAN_BIAS <- subset(df_imp, DAG_type == "MNAR2" & dataset == "mean_imp") %
            gamma_U,
            DAG_combined) %>% 
   summarise(bias_mean = mean(bias), LCI = quantile(bias, 0.025), UCI = quantile(bias, 0.975)) %>%
-  mutate(scenario_combined = paste(scenario_number.x, scenario_number.y, sep = "+"))
+  mutate(scenario_combined = paste(scenario_number_imp, scenario_number_val, sep = "+"))
+
 
 
 
@@ -940,13 +1112,19 @@ MNARY_MInoY_BIAS <- subset(df_imp, DAG_type == "MNAR2" & dataset == "MI_imp_data
                    "gamma_x1",       
                    "gamma_x2",       
                    "gamma_U")) %>%
+  rename("dataset_imp" = "dataset.x",
+         "dataset_val" = "dataset.y",
+         "scenario_number_imp" = "scenario_number.x",
+         "scenario_number_val" = "scenario_number.y",
+         "DAG_type_imp" = "DAG_type.x",
+         "DAG_type_val" = "DAG_type.y") %>%
   mutate(bias = estimates - true_estimates,
-         DAG_combined = paste(DAG_type.x, DAG_type.y, sep = "+")) %>%
-  group_by(dataset.x, 
-           dataset.y,
+         DAG_combined = paste(DAG_type_imp, DAG_type_val, sep = "+")) %>%
+  group_by(dataset_imp, 
+           dataset_val,
            target_measures, 
-           scenario_number.x,
-           scenario_number.y,
+           scenario_number_imp,
+           scenario_number_val,
            N, 
            N_dev, 
            N_val, 
@@ -965,7 +1143,8 @@ MNARY_MInoY_BIAS <- subset(df_imp, DAG_type == "MNAR2" & dataset == "MI_imp_data
            gamma_U,
            DAG_combined) %>% 
   summarise(bias_mean = mean(bias), LCI = quantile(bias, 0.025), UCI = quantile(bias, 0.975)) %>%
-  mutate(scenario_combined = paste(scenario_number.x, scenario_number.y, sep = "+"))
+  mutate(scenario_combined = paste(scenario_number_imp, scenario_number_val, sep = "+"))
+
 
 
 
@@ -990,13 +1169,19 @@ MNARY_MIwithY_BIAS <- subset(df_imp, DAG_type == "MNAR2" & dataset == "MI_imp_da
                    "gamma_x1",       
                    "gamma_x2",       
                    "gamma_U")) %>%
+  rename("dataset_imp" = "dataset.x",
+         "dataset_val" = "dataset.y",
+         "scenario_number_imp" = "scenario_number.x",
+         "scenario_number_val" = "scenario_number.y",
+         "DAG_type_imp" = "DAG_type.x",
+         "DAG_type_val" = "DAG_type.y") %>%
   mutate(bias = estimates - true_estimates,
-         DAG_combined = paste(DAG_type.x, DAG_type.y, sep = "+")) %>%
-  group_by(dataset.x, 
-           dataset.y,
+         DAG_combined = paste(DAG_type_imp, DAG_type_val, sep = "+")) %>%
+  group_by(dataset_imp, 
+           dataset_val,
            target_measures, 
-           scenario_number.x,
-           scenario_number.y,
+           scenario_number_imp,
+           scenario_number_val,
            N, 
            N_dev, 
            N_val, 
@@ -1015,18 +1200,18 @@ MNARY_MIwithY_BIAS <- subset(df_imp, DAG_type == "MNAR2" & dataset == "MI_imp_da
            gamma_U,
            DAG_combined) %>% 
   summarise(bias_mean = mean(bias), LCI = quantile(bias, 0.025), UCI = quantile(bias, 0.975)) %>%
-  mutate(scenario_combined = paste(scenario_number.x, scenario_number.y, sep = "+"))
+  mutate(scenario_combined = paste(scenario_number_imp, scenario_number_val, sep = "+"))
+
 
 
 
 ### COMBINE ALL MNARY BIASES INTO 1 DF
-MNARY_ALL <- MNARY_ALLDATA_BIAS %>% mutate("imp_method" = "All data required") %>%
-  bind_rows(MNARY_MEAN_BIAS %>% mutate("imp_method" = "Imputed by mean")) %>%
+MNARY_ALL <- MNARY_MEAN_BIAS %>% mutate("imp_method" = "Imputed by mean") %>%
   bind_rows(MNARY_MInoY_BIAS %>% mutate("imp_method" = "MI without Y")) %>%
   bind_rows(MNARY_MIwithY_BIAS %>% mutate("imp_method" = "MI with Y")) 
 
 
-rm(MNARY_ALLDATA_BIAS)
+
 rm(MNARY_MEAN_BIAS)
 rm(MNARY_MInoY_BIAS)
 rm(MNARY_MIwithY_BIAS)
@@ -1035,56 +1220,13 @@ rm(MNARY_MIwithY_BIAS)
 ############################################################################################################################################
 # M  N  A  R - X Y
 ############################################################################################################################################
+setwd("~/AntoniaPhD/2. RSim/RESULTScontinuous/25x4")
 
+MNARXY_MEAN_BIAS <- read.csv("MNARXY_MEAN_BIAS.csv")
 
+MNARXY_MInoY_BIAS <- read.csv("MNARXY_MInoY_BIAS.csv")
 
-### MNARXY ***ALL DATA REQUIRED***
-MNARXY_ALLDATA_BIAS <- subset(df_imp, DAG_type == "MNAR3" & dataset == "all_data_imp") %>%
-  rename_at(vars("estimates"), function(x) paste0("true_", x)) %>%
-  left_join(df_val, MNARXY_ALLDATA_BIAS, 
-            multiple = "all", 
-            by = c("Iteration",
-                   "mod",
-                   "target_measures",
-                   "n_iter",          
-                   "N",
-                   "N_dev",
-                   "N_imp",
-                   "N_val", 
-                   "Y_prev",          
-                   "X_categorical",   
-                   "R_prev",
-                   "gamma_x1",       
-                   "gamma_x2",       
-                   "gamma_U")) %>%
-  mutate(bias = estimates - true_estimates,
-         DAG_combined = paste(DAG_type.x, DAG_type.y, sep = "+")) %>%
-  group_by(dataset.x, 
-           dataset.y,
-           target_measures, 
-           scenario_number.x,
-           scenario_number.y,
-           N, 
-           N_dev, 
-           N_val, 
-           N_imp, 
-           Y_prev, 
-           R_prev, 
-           X_categorical,
-           beta_x1.x,
-           beta_x2.x,
-           beta_U.x,
-           beta_x1.y,
-           beta_x2.y,
-           beta_U.y,
-           gamma_x1, 
-           gamma_x2, 
-           gamma_U,
-           DAG_combined) %>% 
-  summarise(bias_mean = mean(bias), LCI = quantile(bias, 0.025), UCI = quantile(bias, 0.975)) %>%
-  mutate(scenario_combined = paste(scenario_number.x, scenario_number.y, sep = "+"))
-
-
+MNARXY_MIwithY_BIAS <- read.csv("MNARXY_MIwithY_BIAS.csv")
 
 ### MNARXY ***MEAN***
 MNARXY_MEAN_BIAS <- subset(df_imp, DAG_type == "MNAR3" & dataset == "mean_imp") %>%
@@ -1105,13 +1247,19 @@ MNARXY_MEAN_BIAS <- subset(df_imp, DAG_type == "MNAR3" & dataset == "mean_imp") 
                    "gamma_x1",       
                    "gamma_x2",       
                    "gamma_U")) %>%
+  rename("dataset_imp" = "dataset.x",
+         "dataset_val" = "dataset.y",
+         "scenario_number_imp" = "scenario_number.x",
+         "scenario_number_val" = "scenario_number.y",
+         "DAG_type_imp" = "DAG_type.x",
+         "DAG_type_val" = "DAG_type.y") %>%
   mutate(bias = estimates - true_estimates,
-         DAG_combined = paste(DAG_type.x, DAG_type.y, sep = "+")) %>%
-  group_by(dataset.x, 
-           dataset.y,
+         DAG_combined = paste(DAG_type_imp, DAG_type_val, sep = "+")) %>%
+  group_by(dataset_imp, 
+           dataset_val,
            target_measures, 
-           scenario_number.x,
-           scenario_number.y,
+           scenario_number_imp,
+           scenario_number_val,
            N, 
            N_dev, 
            N_val, 
@@ -1130,7 +1278,8 @@ MNARXY_MEAN_BIAS <- subset(df_imp, DAG_type == "MNAR3" & dataset == "mean_imp") 
            gamma_U,
            DAG_combined) %>% 
   summarise(bias_mean = mean(bias), LCI = quantile(bias, 0.025), UCI = quantile(bias, 0.975)) %>%
-  mutate(scenario_combined = paste(scenario_number.x, scenario_number.y, sep = "+"))
+  mutate(scenario_combined = paste(scenario_number_imp, scenario_number_val, sep = "+"))
+
 
 
 
@@ -1155,13 +1304,19 @@ MNARXY_MInoY_BIAS <- subset(df_imp, DAG_type == "MNAR3" & dataset == "MI_imp_dat
                    "gamma_x1",       
                    "gamma_x2",       
                    "gamma_U")) %>%
+  rename("dataset_imp" = "dataset.x",
+         "dataset_val" = "dataset.y",
+         "scenario_number_imp" = "scenario_number.x",
+         "scenario_number_val" = "scenario_number.y",
+         "DAG_type_imp" = "DAG_type.x",
+         "DAG_type_val" = "DAG_type.y") %>%
   mutate(bias = estimates - true_estimates,
-         DAG_combined = paste(DAG_type.x, DAG_type.y, sep = "+")) %>%
-  group_by(dataset.x, 
-           dataset.y,
+         DAG_combined = paste(DAG_type_imp, DAG_type_val, sep = "+")) %>%
+  group_by(dataset_imp, 
+           dataset_val,
            target_measures, 
-           scenario_number.x,
-           scenario_number.y,
+           scenario_number_imp,
+           scenario_number_val,
            N, 
            N_dev, 
            N_val, 
@@ -1180,7 +1335,7 @@ MNARXY_MInoY_BIAS <- subset(df_imp, DAG_type == "MNAR3" & dataset == "MI_imp_dat
            gamma_U,
            DAG_combined) %>% 
   summarise(bias_mean = mean(bias), LCI = quantile(bias, 0.025), UCI = quantile(bias, 0.975)) %>%
-  mutate(scenario_combined = paste(scenario_number.x, scenario_number.y, sep = "+"))
+  mutate(scenario_combined = paste(scenario_number_imp, scenario_number_val, sep = "+"))
 
 
 
@@ -1205,13 +1360,19 @@ MNARXY_MIwithY_BIAS <- subset(df_imp, DAG_type == "MNAR3" & dataset == "MI_imp_d
                    "gamma_x1",       
                    "gamma_x2",       
                    "gamma_U")) %>%
+  rename("dataset_imp" = "dataset.x",
+         "dataset_val" = "dataset.y",
+         "scenario_number_imp" = "scenario_number.x",
+         "scenario_number_val" = "scenario_number.y",
+         "DAG_type_imp" = "DAG_type.x",
+         "DAG_type_val" = "DAG_type.y") %>%
   mutate(bias = estimates - true_estimates,
-         DAG_combined = paste(DAG_type.x, DAG_type.y, sep = "+")) %>%
-  group_by(dataset.x, 
-           dataset.y,
+         DAG_combined = paste(DAG_type_imp, DAG_type_val, sep = "+")) %>%
+  group_by(dataset_imp, 
+           dataset_val,
            target_measures, 
-           scenario_number.x,
-           scenario_number.y,
+           scenario_number_imp,
+           scenario_number_val,
            N, 
            N_dev, 
            N_val, 
@@ -1230,7 +1391,7 @@ MNARXY_MIwithY_BIAS <- subset(df_imp, DAG_type == "MNAR3" & dataset == "MI_imp_d
            gamma_U,
            DAG_combined) %>% 
   summarise(bias_mean = mean(bias), LCI = quantile(bias, 0.025), UCI = quantile(bias, 0.975)) %>%
-  mutate(scenario_combined = paste(scenario_number.x, scenario_number.y, sep = "+"))
+  mutate(scenario_combined = paste(scenario_number_imp, scenario_number_val, sep = "+"))
 
 
 
@@ -1243,13 +1404,12 @@ MNARXY_MIwithY_BIAS <- subset(df_imp, DAG_type == "MNAR3" & dataset == "MI_imp_d
 
 
 #NB2: change factor levels of target measures
-MNARXY_ALL <- MNARXY_ALLDATA_BIAS %>% mutate("imp_method" = "All data required") %>%
-  bind_rows(MNARXY_MEAN_BIAS %>% mutate("imp_method" = "Imputed by mean")) %>%
+MNARXY_ALL <- MNARXY_MEAN_BIAS %>% mutate("imp_method" = "Imputed by mean") %>%
   bind_rows(MNARXY_MInoY_BIAS %>% mutate("imp_method" = "MI without Y")) %>%
   bind_rows(MNARXY_MIwithY_BIAS %>% mutate("imp_method" = "MI with Y")) 
 
 
-rm(MNARXY_ALLDATA_BIAS)
+
 rm(MNARXY_MEAN_BIAS)
 rm(MNARXY_MInoY_BIAS)
 rm(MNARXY_MIwithY_BIAS)
@@ -1261,9 +1421,11 @@ rm(MNARXY_MIwithY_BIAS)
 plot_scenario <- function(sn) {
   print(sn)
   
-  MCAR_ALL = MCAR_ALL
+  MNARXY_ALL = MNARXY_ALL
   
-  plot <- ggplot(data = MCAR_ALL %>%
+  MNARXY_ALL$target_measures <- factor(MNARXY_ALL$target_measures, levels = c("AUC", "Calibration Intercept", "Calibration Slope", "Brier Score"))
+  
+  plot <- ggplot(data = MNARXY_ALL %>%
                    filter(scenario_combined == sn), 
                  aes(x = bias_mean, y = dataset.y, color = factor(target_measures),
                      shape = factor(target_measures))) + 
@@ -1347,6 +1509,10 @@ plot_scenario("1796+1580") #MNARX + MNARY
 plot_scenario("1796+1823") #MNARX + MNARXY
 
 
+#test
+plot_scenario("5927+6251")
+plot_scenario("5927+8005")
+
 
 #MNARY_ALL: Y = R1 = 0.5
 plot_scenario("5954+5954") #MNARY + MNARY
@@ -1369,12 +1535,16 @@ plot_scenario("6197+6197") #MNARXY + MNARXY
 plot_scenario("6197+5846") #MNARXY + MCAR
 plot_scenario("6197+5927") #MNARXY + MAR
 plot_scenario("6197+6170") #MNARXY + MNARX
-plot_scenario("6197+5954") #MNARXY + MNARXY
+plot_scenario("6197+5954") #MNARXY + MNARY
 #MNARXY_ALL Y = 0.1
 plot_scenario("1823+1823") #MNARXY + MNARXY
 plot_scenario("1823+1472") #MNARXY + MCAR
 plot_scenario("1823+1553") #MNARXY + MAR
 plot_scenario("1823+1796") #MNARXY + MNARX
-plot_scenario("1823+1580") #MNARXY + MNARXY
+plot_scenario("1823+1580") #MNARXY + MNARY
 
 ######
+#plot diff betas for MNARX at val 
+
+
+plot_scenario("6178+5927") #MNARX + MAR

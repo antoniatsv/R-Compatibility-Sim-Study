@@ -433,7 +433,6 @@ plot_metrics(5954)  # Generates the MNAR-Y plot
 plot_metrics(6197)  # Generates the MNAR-XY plot
 
 
-<<<<<<< HEAD
 
 
 
