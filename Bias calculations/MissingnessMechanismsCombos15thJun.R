@@ -410,7 +410,7 @@ MNARXY_ALLDATA_BIAS <- read.csv("MNARXY_ALLDATA_BIAS.csv")
 MNARXY_ALLDATA_BIAS <- subset(MNARXY_ALLDATA, select = -X)
 
 
-MNARXY_ALLDATA_BIAS <- MNARXY_ALLDATA %>% rename("dataset_imp" = "dataset.x",
+MNARXY_ALLDATA_BIAS <- MNARXY_ALLDATA_BIAS %>% rename("dataset_imp" = "dataset.x",
                                                  "dataset_val" = "dataset.y",
                                                  "scenario_number_imp" = "scenario_number.x",
                                                  "scenario_number_val" = "scenario_number.y")
@@ -462,7 +462,8 @@ plot_scenario <- function() {
       panel.spacing.x = unit(0.5, "lines")
     ) +
     ggh4x::facet_grid2(target_measures ~ DAG_plot, scales = "free_x", independent = "x") +
-    scale_x_continuous(limits = function(x) c(-max(abs(x)), max(abs(x)))) +
+    scale_x_continuous(limits = function(x) c(-max(abs(x)), max(abs(x))),
+                       breaks = scales::breaks_pretty(n = 3)) + # Limit breaks to 5
     theme(
       panel.border = element_rect(color = "black", fill = NA, size = 1.5),
       strip.text = element_text(size = 14, hjust = 0.5),
@@ -470,6 +471,7 @@ plot_scenario <- function() {
     ) +
     ggtitle("Missingness mechanisms at model validation") +
     theme(plot.title = element_text(face = "bold", size = 16, hjust = 0.5))
+  
   plot <- plot + theme(panel.grid.major = element_line(size = 1.5))
   
   # Return the plot
@@ -480,6 +482,9 @@ plot_scenario <- function() {
 plot_all_scenarios <- plot_scenario()
 print(plot_all_scenarios)
 
+
+setwd("/Users/user/AntoniaPhD/00. Thesis/thesis_new/Chapter 3 figures")
+ggsave("BIAS-ALL-DATA-REQUIRED.png", units="in", width=17.5, height=11, dpi=300)
 
 ############################################################################################################################################
 # M   C   A   R 
@@ -664,6 +669,84 @@ rm(MCAR_MEAN_BIAS)
 rm(MCAR_MInoY_BIAS)
 rm(MCAR_MIwithY_BIAS)
 
+
+
+# PLOTS
+############################################################################################################################################
+
+plot_scenario <- function(sn) {
+  print(sn)
+  
+  MCAR_ALL = MCAR_ALL
+  
+  MCAR_ALL$target_measures <- factor(MCAR_ALL$target_measures, levels = c("AUC", "Calibration Intercept", "Calibration Slope", "Brier Score"))
+  
+  plot <- ggplot(data = MCAR_ALL %>%
+                   filter(scenario_combined == sn), 
+                 aes(x = bias_mean, y = dataset_val, color = factor(target_measures),
+                     shape = factor(target_measures))) + 
+    geom_errorbar(aes(xmin = LCI, xmax = UCI), width=.1) +
+    geom_point(size = 3, stroke = 0.5) +
+    guides(color = guide_legend(reverse = TRUE)) + 
+    scale_shape_manual(values = c(8, 17, 16, 15)) +
+    scale_color_brewer(palette = "Set1") +
+    geom_vline(xintercept = 0, linetype="dotted") + 
+    xlab("Bias Mean") +
+    ylab("Validation Data Imputation Methods") +
+    theme_minimal() +
+    theme(legend.position = "none",
+          axis.text = element_text(size=14),
+          axis.title = element_text(size=16, face="bold"),
+          axis.text.x = element_text(size=14),
+          axis.text.y = element_text(size=14),
+          strip.text = element_text(size = 16),
+          panel.background = element_rect(fill = "gray90"),  # add background color to panels
+          panel.spacing.x = unit(0.5, "lines")) +  # increase space between panels
+    ggh4x::facet_grid2(target_measures ~ imp_method, scales = "free_x", independent = "x") +
+    scale_x_continuous(limits = function(x) c(-max(abs(x)), max(abs(x))),
+                       breaks = scales::breaks_pretty(n = 3)) +  # set limits to center zero
+    theme(panel.border = element_rect(color = "black", fill = NA, size = 1.5),  # add border around panels
+          #
+          strip.text = element_text(size = 14, hjust = 0.5),  # modify panel label text
+          strip.placement = "outside")  +  # move panel labels outside of plot area
+    ggtitle("Implementation Data Imputation Methods") +
+    theme(plot.title = element_text(face = "bold", size = 16, hjust = 0.5))
+  plot <- plot + theme(panel.grid.major = element_line(size = 1.5))
+  
+  # Return the plot
+  return(plot)
+}
+
+
+setwd("/Users/user/AntoniaPhD/00. Thesis/thesis_new/Chapter 3 figures")
+#MCAR_ALL: Y = R1 = 0.5
+plot_scenario("5846+5846") #MCAR + MCAR
+ggsave("MCAR-MCAR-0.5.png", units="in", width=11, height=10, dpi=300)
+
+plot_scenario("5846+5927") #MCAR + MAR
+ggsave("MCAR (D) -MAR (EV)-0.5.png", units="in", width=11, height=10, dpi=300)
+
+plot_scenario("5846+6170") #MCAR + MNARX
+ggsave("MCAR (D) -MNARX (EV)-0.5.png", units="in", width=11, height=10, dpi=300)
+
+plot_scenario("5846+5954") #MCAR + MNARY
+ggsave("MCAR (D) -MNARY (EV)-0.5.png", units="in", width=11, height=10, dpi=300)
+
+plot_scenario("5846+6197") #MCAR + MNARXY
+ggsave("MCAR (D) -MNARXY (EV)-0.5.png", units="in", width=11, height=10, dpi=300)
+
+#MCAR_ALL: Y = 0.1, R1 = 0.5
+#plot_scenario("1472+1472") #MCAR + MCAR
+#plot_scenario("1472+1553") #MCAR + MAR
+#plot_scenario("1472+1796") #MCAR + MNARX
+#plot_scenario("1472+1580") #MCAR + MNARY
+#plot_scenario("1472+1823") #MCAR + MNARXY
+
+
+
+setwd("/Users/user/AntoniaPhD/00. Thesis/thesis_new/Chapter 3 figures")
+
+
 ############################################################################################################################################
 # M  A  R
 ############################################################################################################################################
@@ -845,6 +928,83 @@ MAR_ALL <- MAR_MEAN_BIAS %>% mutate("imp_method" = "Imputed by mean") %>%
 rm(MAR_MEAN_BIAS)
 rm(MAR_MInoY_BIAS)
 rm(MAR_MIwithY_BIAS)
+
+
+# PLOTS
+############################################################################################################################################
+
+plot_scenario <- function(sn) {
+  print(sn)
+  
+  MAR_ALL = MAR_ALL
+  
+  MAR_ALL$target_measures <- factor(MAR_ALL$target_measures, levels = c("AUC", "Calibration Intercept", "Calibration Slope", "Brier Score"))
+  
+  plot <- ggplot(data = MAR_ALL %>%
+                   filter(scenario_combined == sn), 
+                 aes(x = bias_mean, y = dataset_val, color = factor(target_measures),
+                     shape = factor(target_measures))) + 
+    geom_errorbar(aes(xmin = LCI, xmax = UCI), width=.1) +
+    geom_point(size = 3, stroke = 0.5) +
+    guides(color = guide_legend(reverse = TRUE)) + 
+    scale_shape_manual(values = c(8, 17, 16, 15)) +
+    scale_color_brewer(palette = "Set1") +
+    geom_vline(xintercept = 0, linetype="dotted") + 
+    xlab("Bias Mean") +
+    ylab("Validation Data Imputation Methods") +
+    theme_minimal() +
+    theme(legend.position = "none",
+          axis.text = element_text(size=14),
+          axis.title = element_text(size=16, face="bold"),
+          axis.text.x = element_text(size=14),
+          axis.text.y = element_text(size=14),
+          strip.text = element_text(size = 16),
+          panel.background = element_rect(fill = "gray90"),  # add background color to panels
+          panel.spacing.x = unit(0.5, "lines")) +  # increase space between panels
+    ggh4x::facet_grid2(target_measures ~ imp_method, scales = "free_x", independent = "x") +
+    scale_x_continuous(limits = function(x) c(-max(abs(x)), max(abs(x))),
+                       breaks = scales::breaks_pretty(n = 3)) +  # set limits to center zero
+    theme(panel.border = element_rect(color = "black", fill = NA, size = 1.5),  # add border around panels
+          #
+          strip.text = element_text(size = 14, hjust = 0.5),  # modify panel label text
+          strip.placement = "outside")  +  # move panel labels outside of plot area
+    ggtitle("Implementation Data Imputation Methods") +
+    theme(plot.title = element_text(face = "bold", size = 16, hjust = 0.5))
+  plot <- plot + theme(panel.grid.major = element_line(size = 1.5))
+  
+  # Return the plot
+  return(plot)
+}
+
+
+setwd("/Users/user/AntoniaPhD/00. Thesis/thesis_new/Chapter 3 figures")
+#MAR_ALL: Y = R1 = 0.5
+plot_scenario("5927+5927") #MAR + MAR
+ggsave("MAR-MAR-0.5.png", units="in", width=11, height=10, dpi=300)
+
+plot_scenario("5927+5846") #MAR + MCAR
+ggsave("MAR (D) -MCAR (EV)-0.5.png", units="in", width=11, height=10, dpi=300)
+
+plot_scenario("5927+6170") #MAR + MNARX
+ggsave("MAR (D) -MNARX (EV)-0.5.png", units="in", width=11, height=10, dpi=300)
+
+plot_scenario("5927+5954") #MAR + MNARY
+ggsave("MAR (D) -MNARY (EV)-0.5.png", units="in", width=11, height=10, dpi=300)
+
+plot_scenario("5927+6197") #MAR + MNARXY
+ggsave("MAR (D) -MNARXY (EV)-0.5.png", units="in", width=11, height=10, dpi=300)
+
+#MAR_ALL: Y = 0.1; R1 = 0.5
+#plot_scenario("1553+1553") #MAR + MAR
+#plot_scenario("1553+1472") #MAR + MCAR
+#plot_scenario("1553+1796") #MAR + MNARX
+#plot_scenario("1553+1580") #MAR + MNARY
+#plot_scenario("1553+1823") #MAR + MNARXY
+
+
+
+setwd("/Users/user/AntoniaPhD/00. Thesis/thesis_new/Chapter 3 figures")
+ggsave("MAR-MAR-0.5.png", units="in", width=11, height=10, dpi=300)
 
 ############################################################################################################################################
 # M  N  A  R - X
@@ -1031,6 +1191,84 @@ rm(MNARX_MEAN_BIAS)
 rm(MNARX_MInoY_BIAS)
 rm(MNARX_MIwithY_BIAS)
 
+
+# PLOTS
+############################################################################################################################################
+
+plot_scenario <- function(sn) {
+  print(sn)
+  
+  MNARX_ALL = MNARX_ALL
+  
+  MNARX_ALL$target_measures <- factor(MNARX_ALL$target_measures, levels = c("AUC", "Calibration Intercept", "Calibration Slope", "Brier Score"))
+  
+  plot <- ggplot(data = MNARX_ALL %>%
+                   filter(scenario_combined == sn), 
+                 aes(x = bias_mean, y = dataset_val, color = factor(target_measures),
+                     shape = factor(target_measures))) + 
+    geom_errorbar(aes(xmin = LCI, xmax = UCI), width=.1) +
+    geom_point(size = 3, stroke = 0.5) +
+    guides(color = guide_legend(reverse = TRUE)) + 
+    scale_shape_manual(values = c(8, 17, 16, 15)) +
+    scale_color_brewer(palette = "Set1") +
+    geom_vline(xintercept = 0, linetype="dotted") + 
+    xlab("Bias Mean") +
+    ylab("Validation Data Imputation Methods") +
+    theme_minimal() +
+    theme(legend.position = "none",
+          axis.text = element_text(size=14),
+          axis.title = element_text(size=16, face="bold"),
+          axis.text.x = element_text(size=14),
+          axis.text.y = element_text(size=14),
+          strip.text = element_text(size = 16),
+          panel.background = element_rect(fill = "gray90"),  # add background color to panels
+          panel.spacing.x = unit(0.5, "lines")) +  # increase space between panels
+    ggh4x::facet_grid2(target_measures ~ imp_method, scales = "free_x", independent = "x") +
+    scale_x_continuous(limits = function(x) c(-max(abs(x)), max(abs(x))),
+                       breaks = scales::breaks_pretty(n = 3)) +  # set limits to center zero
+    theme(panel.border = element_rect(color = "black", fill = NA, size = 1.5),  # add border around panels
+          #
+          strip.text = element_text(size = 14, hjust = 0.5),  # modify panel label text
+          strip.placement = "outside")  +  # move panel labels outside of plot area
+    ggtitle("Implementation Data Imputation Methods") +
+    theme(plot.title = element_text(face = "bold", size = 16, hjust = 0.5))
+  plot <- plot + theme(panel.grid.major = element_line(size = 1.5))
+  
+  # Return the plot
+  return(plot)
+}
+
+
+
+#MNARX_ALL: Y = R1 = 0.5
+plot_scenario("6170+6170") #MNARX + MNARX
+ggsave("MNARX-MNARX-0.5.png", units="in", width=11, height=10, dpi=300)
+
+plot_scenario("6170+5846") #MNARX + MCAR
+ggsave("MNARX (D)-MCAR (EV)-0.5.png", units="in", width=11, height=10, dpi=300)
+
+
+plot_scenario("6170+5927") #MNARX + MAR
+ggsave("MNARX (D)-MAR (EV)-0.5.png", units="in", width=11, height=10, dpi=300)
+
+plot_scenario("6170+5954") #MNARX + MNARY
+ggsave("MNARX (D)-MNARY (EV)-0.5.png", units="in", width=11, height=10, dpi=300)
+
+plot_scenario("6170+6197") #MNARX + MNARXY
+ggsave("MNARX (D)-MNARXY (EV)-0.5.png", units="in", width=11, height=10, dpi=300)
+
+
+
+#MNARX_ALL: Y = 01, R1 = 0.5
+#plot_scenario("1796+1796") #MNARX + MNARX
+#plot_scenario("1796+1472") #MNARX + MCAR
+#plot_scenario("1796+1553") #MNARX + MAR
+#plot_scenario("1796+1580") #MNARX + MNARY
+#plot_scenario("1796+1823") #MNARX + MNARXY
+
+setwd("/Users/user/AntoniaPhD/00. Thesis/thesis_new/Chapter 3 figures")
+ggsave("MNARX-MNARX-0.5.png", units="in", width=11, height=10, dpi=300)
+
 ############################################################################################################################################
 # M  N  A  R - Y
 ############################################################################################################################################
@@ -1215,6 +1453,83 @@ MNARY_ALL <- MNARY_MEAN_BIAS %>% mutate("imp_method" = "Imputed by mean") %>%
 rm(MNARY_MEAN_BIAS)
 rm(MNARY_MInoY_BIAS)
 rm(MNARY_MIwithY_BIAS)
+
+
+# PLOTS
+############################################################################################################################################
+
+plot_scenario <- function(sn) {
+  print(sn)
+  
+  MNARY_ALL = MNARY_ALL
+  
+  MNARY_ALL$target_measures <- factor(MNARY_ALL$target_measures, levels = c("AUC", "Calibration Intercept", "Calibration Slope", "Brier Score"))
+  
+  plot <- ggplot(data = MNARY_ALL %>%
+                   filter(scenario_combined == sn), 
+                 aes(x = bias_mean, y = dataset_val, color = factor(target_measures),
+                     shape = factor(target_measures))) + 
+    geom_errorbar(aes(xmin = LCI, xmax = UCI), width=.1) +
+    geom_point(size = 3, stroke = 0.5) +
+    guides(color = guide_legend(reverse = TRUE)) + 
+    scale_shape_manual(values = c(8, 17, 16, 15)) +
+    scale_color_brewer(palette = "Set1") +
+    geom_vline(xintercept = 0, linetype="dotted") + 
+    xlab("Bias Mean") +
+    ylab("Validation Data Imputation Methods") +
+    theme_minimal() +
+    theme(legend.position = "none",
+          axis.text = element_text(size=14),
+          axis.title = element_text(size=16, face="bold"),
+          axis.text.x = element_text(size=14),
+          axis.text.y = element_text(size=14),
+          strip.text = element_text(size = 16),
+          panel.background = element_rect(fill = "gray90"),  # add background color to panels
+          panel.spacing.x = unit(0.5, "lines")) +  # increase space between panels
+    ggh4x::facet_grid2(target_measures ~ imp_method, scales = "free_x", independent = "x") +
+    scale_x_continuous(limits = function(x) c(-max(abs(x)), max(abs(x))),
+                       breaks = scales::breaks_pretty(n = 3)) +  # set limits to center zero
+    theme(panel.border = element_rect(color = "black", fill = NA, size = 1.5),  # add border around panels
+          #
+          strip.text = element_text(size = 14, hjust = 0.5),  # modify panel label text
+          strip.placement = "outside")  +  # move panel labels outside of plot area
+    ggtitle("Implementation Data Imputation Methods") +
+    theme(plot.title = element_text(face = "bold", size = 16, hjust = 0.5))
+  plot <- plot + theme(panel.grid.major = element_line(size = 1.5))
+  
+  # Return the plot
+  return(plot)
+}
+
+
+#MNARY_ALL: Y = R1 = 0.5
+plot_scenario("5954+5954") #MNARY + MNARY
+ggsave("MNARY-MNARY-0.5.png", units="in", width=11, height=10, dpi=300)
+
+plot_scenario("5954+5846") #MNARY + MCAR
+ggsave("MNARY (D)-MCAR (EV)-0.5.png", units="in", width=11, height=10, dpi=300)
+
+
+plot_scenario("5954+5927") #MNARY + MAR
+ggsave("MNARY (D)-MAR (EV)-0.5.png", units="in", width=11, height=10, dpi=300)
+
+plot_scenario("5954+6170") #MNARY + MNARX
+ggsave("MNARY (D)-MNARX (EV)-0.5.png", units="in", width=11, height=10, dpi=300)
+
+plot_scenario("5954+6197") #MNARY + MNARXY
+ggsave("MNARY (D) -MNARXY (EV)-0.5.png", units="in", width=11, height=10, dpi=300)
+
+
+#MNARY_ALL: Y = 0.1, R1 = 0.5
+#plot_scenario("1580+1580") #MNARY + MNARY
+#plot_scenario("1580+1472") #MNARY + MCAR
+#plot_scenario("1580+1553") #MNARY + MAR
+#plot_scenario("1580+1796") #MNARY + MNARX
+#plot_scenario("1580+1823") #MNARY + MNARXY
+
+
+setwd("/Users/user/AntoniaPhD/00. Thesis/thesis_new/Chapter 3 figures")
+ggsave("MNARY-MNARY-0.5.png", units="in", width=11, height=10, dpi=300)
 
 
 ############################################################################################################################################
@@ -1447,7 +1762,8 @@ plot_scenario <- function(sn) {
           panel.background = element_rect(fill = "gray90"),  # add background color to panels
           panel.spacing.x = unit(0.5, "lines")) +  # increase space between panels
     ggh4x::facet_grid2(target_measures ~ imp_method, scales = "free_x", independent = "x") +
-    scale_x_continuous(limits = function(x) c(-max(abs(x)), max(abs(x)))) +  # set limits to center zero
+    scale_x_continuous(limits = function(x) c(-max(abs(x)), max(abs(x))),
+                       breaks = scales::breaks_pretty(n = 3)) +  # set limits to center zero
     theme(panel.border = element_rect(color = "black", fill = NA, size = 1.5),  # add border around panels
           #
           strip.text = element_text(size = 14, hjust = 0.5),  # modify panel label text
@@ -1460,7 +1776,40 @@ plot_scenario <- function(sn) {
   return(plot)
 }
 
-setwd("~/AntoniaPhD/2. RSim/RESULTScontinuous/plots_new")
+
+
+setwd("/Users/user/AntoniaPhD/00. Thesis/thesis_new/Chapter 3 figures")
+#MNARXY_ALL: Y = R1 = 0.5
+plot_scenario("6197+6197") #MNARXY + MNARXY
+ggsave("MNARXY-MNARXY-0.5.png", units="in", width=11, height=10, dpi=300)
+
+plot_scenario("6197+5846") #MNARXY + MCAR
+ggsave("MNARXY (D) -MCAR (EV)-0.5.png", units="in", width=11, height=10, dpi=300)
+
+plot_scenario("6197+5927") #MNARXY + MAR
+ggsave("MNARXY (D) -MAR (EV)-0.5.png", units="in", width=11, height=10, dpi=300)
+
+plot_scenario("6197+6170") #MNARXY + MNARX
+ggsave("MNARXY (D) -MNARX (EV)-0.5.png", units="in", width=11, height=10, dpi=300)
+
+plot_scenario("6197+5954") #MNARXY + MNARY
+ggsave("MNARXY (D) -MNARY (EV)-0.5.png", units="in", width=11, height=10, dpi=300)
+
+
+
+#MNARXY_ALL Y = 0.1
+#plot_scenario("1823+1823") #MNARXY + MNARXY
+#plot_scenario("1823+1472") #MNARXY + MCAR
+#plot_scenario("1823+1553") #MNARXY + MAR
+#plot_scenario("1823+1796") #MNARXY + MNARX
+#plot_scenario("1823+1580") #MNARXY + MNARY
+
+
+
+
+setwd("/Users/user/AntoniaPhD/00. Thesis/thesis_new/Chapter 3 figures")
+ggsave("MNARXY-MNARXY-0.5.png", units="in", width=11, height=10, dpi=300)
+
 
 #MCAR_ALL: Y = R1 = 0.5
 plot_scenario("5846+5846") #MCAR + MCAR
