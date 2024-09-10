@@ -2,3 +2,7 @@
 .Rhistory
 .RData
 .Ruserdata
+/Manuscript
+/Templates
+/Outputs/ncorr_analysis_results.RDS
+/Outputs/simulation_results.7z
