@@ -161,7 +161,196 @@ target_performance <- "All Data Required"
 #   unique()
 ####----------------------------------------------------------------------------
 
-### Function to help summarise the results for a given iteration number:
+### Function to plot the predictive performance of each CPM:
+performance_plotting_fnc <- function(df,
+                                     scenario_number,
+                                     target_performance_imputation_method = c("All Data Required",
+                                                                              "CCA",
+                                                                              "Mean Imputation",
+                                                                              "RI (refit)",
+                                                                              "RI (transported)",
+                                                                              "MI no Y (refit)",
+                                                                              "MI no Y (transported)",
+                                                                              "MI with Y (refit)",
+                                                                              "MI with Y (transported)",
+                                                                              "Pattern Sub-Model")) {
+  
+  target_performance_imputation_method <- as.character(match.arg(target_performance_imputation_method))
+  
+  df <- df %>%
+    dplyr::mutate("combinations" = case_when(
+      CPM == "PR_fullyobserved" |
+        CPM == "PR_CCA" |
+        CPM == "PR_mean" ~ Validation_Dataset %in% c("All Data Required",
+                                                     "CCA",
+                                                     "Mean Imputation",
+                                                     "MI with Y (refit)",
+                                                     "MI no Y (refit)",
+                                                     "RI (refit)"),
+      CPM == "PR_RI" ~ Validation_Dataset %in% c("All Data Required",
+                                                 "CCA",
+                                                 "Mean Imputation",
+                                                 "MI with Y (refit)",
+                                                 "MI no Y (refit)",
+                                                 "RI (transported)",
+                                                 "RI (refit)"),
+      CPM == "PR_MIwithY" ~ Validation_Dataset %in% c("All Data Required",
+                                                      "CCA",
+                                                      "Mean Imputation",
+                                                      "MI with Y (transported)",
+                                                      "MI with Y (refit)",
+                                                      "MI no Y (refit)",
+                                                      "RI (refit)"),
+      CPM == "PR_MInoY" ~ Validation_Dataset %in% c("All Data Required",
+                                                    "CCA",
+                                                    "Mean Imputation",
+                                                    "MI with Y (refit)",
+                                                    "MI no Y (transported)",
+                                                    "MI no Y (refit)",
+                                                    "RI (refit)"),
+      
+      CPM == "PR_patternsubmodel" ~ Validation_Dataset %in% c("All Data Required",
+                                                              "CCA",
+                                                              "Mean Imputation",
+                                                              "MI with Y (refit)",
+                                                              "MI no Y (refit)",
+                                                              "RI (refit)",
+                                                              "Pattern Sub-Model"),
+      .default = NA)) %>%
+    dplyr::filter(combinations == 1)
+  
+  scenario_df <- df %>%
+    dplyr::filter(Simulation_Scenario %in% scenario_number) %>%
+    dplyr::filter(Validation_Dataset == target_performance_imputation_method) %>%
+    dplyr::select(Simulation_Scenario, Scenario,
+                  CPM, Validation_Dataset,
+                  contains("_Mean"),
+                  contains("_quantileLower"),
+                  contains("_quantileUpper")) %>%
+    pivot_longer(cols = c(contains("_Mean"),
+                          contains("_quantileLower"),
+                          contains("_quantileUpper"))) %>%
+    separate_wider_delim(name,
+                         delim = "_",
+                         names = c("Metric", "Summary_Type")) %>%
+    pivot_wider(id_cols = c("Simulation_Scenario", "Scenario",
+                            "CPM", "Validation_Dataset", "Metric"),
+                names_from = "Summary_Type",
+                values_from = "value") 
+  
+  plot_df <- scenario_df %>%
+    dplyr::mutate(Metric = forcats::fct_recode(Metric,
+                                               "Brier Score" = "Brier",
+                                               "Calibration Intercept" = "CalInt",
+                                               "Calibration Slope" = "CalSlope")) %>%
+    mutate(CPM = stringr::str_remove(CPM, "PR_"),
+           
+           CPM = forcats::fct_recode(CPM,
+                                     "CCA" = "CCA",
+                                     "RI" = "RI",
+                                     "MI no Y" = "MInoY",
+                                     "MI with Y" = "MIwithY",
+                                     "Fully Observed" = "fullyobserved",
+                                     "Mean Imputation" = "mean",
+                                     "PSM" = "patternsubmodel"),
+           
+           CPM = forcats::fct_relevel(CPM,
+                                      "Fully Observed",
+                                      "CCA",
+                                      "Mean Imputation",
+                                      "RI",
+                                      "MI with Y",
+                                      "MI no Y",
+                                      "PSM"))
+  
+  plot_df %>%
+    dplyr::mutate(Validation_Dataset = forcats::fct_recode(Validation_Dataset,
+                                                           "Fully Observed Data" = "All Data Required"),
+                  Validation_Dataset = forcats::fct_relevel(Validation_Dataset,
+                                                            "Fully Observed Data",
+                                                            "CCA",
+                                                            "Mean Imputation",
+                                                            "RI (refit)",
+                                                            "RI (transported)",
+                                                            "MI with Y (refit)",
+                                                            "MI with Y (transported)",
+                                                            "MI no Y (refit)",
+                                                            "MI no Y (transported)",
+                                                            "Pattern Sub-Model")) %>%
+    ggplot(aes(x = Mean,
+               y = CPM)) +
+    geom_point() +
+    geom_errorbar(aes(xmin = quantileLower, 
+                      xmax = quantileUpper), width=.1) +
+    xlab("Predictive Performance") +
+    ylab("Developed CPM") +
+    geom_vline(data = data.frame("Metric" = c("Calibration Intercept",
+                                              "Calibration Slope"),
+                                 "Mean" = c(0,1)),
+               aes(xintercept = Mean),
+               linetype = "dashed") +
+    ggh4x::facet_grid2(Scenario ~ Metric, scales = "free") +
+    ggtitle(paste("Targetting ", target_performance_imputation_method, " Performance", sep = "")) +
+    theme_minimal(base_size = 12) +
+    theme(legend.position = "bottom",
+          panel.background = element_rect(fill = "gray90"),  
+          panel.spacing.x = unit(0.5, "lines"),
+          axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+          plot.title = element_text(size = 14, hjust = 0.5),
+          panel.border = element_rect(color = "black", fill = NA, linewidth = 0.5)) 
+}
+
+## Consistent missingness mechanism plots:
+#rho = 0 
+performance_plotting_fnc(df = simulation_results_summarised,
+                         scenario_number = c(4, 148),
+                         target_performance_imputation_method = target_performance)
+
+performance_plotting_fnc(df = simulation_results_summarised,
+                         scenario_number = c(436, 220, 508),
+                         target_performance_imputation_method = target_performance)
+
+#rho = 0.75 
+performance_plotting_fnc(df = simulation_results_summarised,
+                         scenario_number = c(8, 152),
+                         target_performance_imputation_method = target_performance)
+
+performance_plotting_fnc(df = simulation_results_summarised,
+                         scenario_number = c(440, 224, 512),
+                         target_performance_imputation_method = target_performance)
+
+## Inconsistent missingness mechanism plots:
+#rho = 0
+#MCAR+something
+performance_plotting_fnc(df = simulation_results_summarised,
+                         scenario_number = c(20, 52, 28, 60),
+                         target_performance_imputation_method = target_performance)
+#MAR+something
+performance_plotting_fnc(df = simulation_results_summarised,
+                         scenario_number = c(180, 156, 188),
+                         target_performance_imputation_method = target_performance)
+#MNAR+something
+performance_plotting_fnc(df = simulation_results_summarised,
+                         scenario_number = c(412, 444, 252),
+                         target_performance_imputation_method = target_performance)
+
+#rho = 0.75
+#MCAR+something
+performance_plotting_fnc(df = simulation_results_summarised,
+                         scenario_number = c(24, 56, 32, 64),
+                         target_performance_imputation_method = target_performance)
+#MAR+something
+performance_plotting_fnc(df = simulation_results_summarised,
+                         scenario_number = c(184, 161, 193),
+                         target_performance_imputation_method = target_performance)
+#MNAR-X+something
+performance_plotting_fnc(df = simulation_results_summarised,
+                         scenario_number = c(416, 448, 256),
+                         target_performance_imputation_method = target_performance)
+
+
+
+### Function to plot the bias in validation results:
 plotting_fnc <- function(df,
                          scenario_number,
                          target_performance_imputation_method = c("All Data Required",
